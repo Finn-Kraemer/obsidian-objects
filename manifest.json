@@ -1,0 +1,10 @@
+{
+  "id": "template-objects",
+  "name": "Obsidian Objects",
+  "version": "1.0.0",
+  "minAppVersion": "1.5.0",
+  "description": "A plugin that accelerates note creation from templates using @-triggers.",
+  "author": "Finn-Kraemer",
+  "authorUrl": "https://github.com/Finn-Kraemer",
+  "isDesktopOnly": false
+}

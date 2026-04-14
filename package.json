@@ -1,5 +1,5 @@
 {
-  "name": "obsidian-objects",
+  "name": "objects",
   "version": "1.0.0",
   "description": "A plugin for Obsidian.",
   "main": "main.js",
