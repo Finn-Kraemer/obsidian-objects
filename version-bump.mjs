@@ -9,6 +9,15 @@ const { minAppVersion } = manifest;
 manifest.version = targetVersion;
 writeFileSync('manifest.json', JSON.stringify(manifest, null, '\t'));
 
+// update release/manifest.json
+try {
+	let releaseManifest = JSON.parse(readFileSync('release/manifest.json', 'utf8'));
+	releaseManifest.version = targetVersion;
+	writeFileSync('release/manifest.json', JSON.stringify(releaseManifest, null, '\t'));
+} catch (e) {
+	console.error("Could not find release/manifest.json to update.");
+}
+
 // update versions.json
 let versions = {};
 try {
