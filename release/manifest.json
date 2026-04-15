@@ -1,7 +1,7 @@
 {
 	"id": "template-objects",
 	"name": "Obsidian Objects",
-	"version": "1.0.6",
+	"version": "1.0.7",
 	"minAppVersion": "1.5.0",
 	"description": "Instantly create and organize notes from templates using customizable @-triggers without breaking your flow.",
 	"author": "Finn-Kraemer",
