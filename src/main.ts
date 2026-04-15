@@ -10,14 +10,15 @@ import { TriggerSuggest } from './suggester';
  */
 export default class ObjectsPlugin extends Plugin {
     /** Current configuration of the plugin */
-    settings: ObsidianObjectsSettings;
+    settings: ObsidianObjectsSettings = DEFAULT_SETTINGS;
     /** Handler for interacting with the Templater plugin or the fallback system */
-    templater: TemplaterHandler;
+    templater!: TemplaterHandler;
 
     /**
      * Initializes the plugin when loaded into Obsidian.
      */
     async onload() {
+        console.debug('Objects: Loading...');
         await this.loadSettings();
         
         this.templater = new TemplaterHandler(this.app);

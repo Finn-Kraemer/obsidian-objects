@@ -63,6 +63,9 @@ var SettingsTab = class extends import_obsidian2.PluginSettingTab {
     this.plugin = plugin;
     this.debouncedSave = (0, import_obsidian2.debounce)(() => this.plugin.saveSettings(), 500, true);
   }
+  /**
+   * Renders the entire settings page.
+   */
   display() {
     const { containerEl } = this;
     containerEl.empty();
@@ -71,9 +74,12 @@ var SettingsTab = class extends import_obsidian2.PluginSettingTab {
     this.renderTriggerMappings(containerEl);
     this.renderFooter(containerEl);
   }
+  /**
+   * Displays the status of integrations (e.g., Templater).
+   */
   renderStatus(containerEl) {
     const isTemplaterActive = !!this.plugin.templater.getApi();
-    new import_obsidian2.Setting(containerEl).setName("Integrations status").setDesc(isTemplaterActive ? "Templater integration is active." : "Templater plugin is not detected.").then((s) => {
+    new import_obsidian2.Setting(containerEl).setName("Integrations status").setDesc(isTemplaterActive ? "Templater integration is active." : "Templater plugin was not detected.").then((s) => {
       const status = s.controlEl.createSpan({
         cls: "objects-status-indicator",
         text: isTemplaterActive ? "\u2714 Active" : "\u2718 Missing"
@@ -81,17 +87,23 @@ var SettingsTab = class extends import_obsidian2.PluginSettingTab {
       status.addClass(isTemplaterActive ? "objects-status-active" : "objects-status-missing");
     });
   }
+  /**
+   * Renders general configuration like template and output folders.
+   */
   renderGeneralConfig(containerEl) {
     new import_obsidian2.Setting(containerEl).setName("General configuration").setHeading();
     new import_obsidian2.Setting(containerEl).setName("Template folder").setDesc("Root directory for your markdown templates.").addText((text) => text.setPlaceholder("Templates").setValue(this.plugin.settings.templateFolder).onChange((v) => {
       this.plugin.settings.templateFolder = sanitizeFolderPath(v);
       this.debouncedSave();
     }));
-    new import_obsidian2.Setting(containerEl).setName("Default output path").setDesc("Fallback folder for newly created notes.").addText((text) => text.setPlaceholder("Inbox").setValue(this.plugin.settings.defaultOutputPath).onChange((v) => {
+    new import_obsidian2.Setting(containerEl).setName("Default output path").setDesc("Fallback folder for newly created notes, if not defined in the mapping.").addText((text) => text.setPlaceholder("Inbox").setValue(this.plugin.settings.defaultOutputPath).onChange((v) => {
       this.plugin.settings.defaultOutputPath = sanitizeFolderPath(v);
       this.debouncedSave();
     }));
   }
+  /**
+   * Renders the list of trigger mappings.
+   */
   renderTriggerMappings(containerEl) {
     new import_obsidian2.Setting(containerEl).setName("Trigger mappings").setHeading();
     this.plugin.settings.triggerTemplates.forEach((mapping, index) => {
@@ -103,6 +115,9 @@ var SettingsTab = class extends import_obsidian2.PluginSettingTab {
       this.display();
     }));
   }
+  /**
+   * Renders a single mapping row (Trigger, Template, Path, Status).
+   */
   renderMappingRow(containerEl, mapping, index) {
     const s = new import_obsidian2.Setting(containerEl).addToggle((t) => t.setValue(mapping.enabled).onChange(async (v) => {
       mapping.enabled = v;
@@ -175,6 +190,7 @@ var TemplaterHandler = class {
   }
   /**
    * Tries to get the Templater API if the plugin is enabled.
+   * @returns The Templater API or null if the plugin is not active.
    */
   getApi() {
     const plugins = this.app.plugins;
@@ -186,7 +202,6 @@ var TemplaterHandler = class {
   }
   /**
    * Creates a new note from a template.
-   * Uses Templater if available, otherwise falls back to a basic replacement engine.
    */
   async createNoteFromTemplate(templateFile, folderPath, fileName) {
     const api = this.getApi();
@@ -208,7 +223,8 @@ var TemplaterHandler = class {
     }
   }
   /**
-   * Basic placeholder replacement for {{title}}, {{date}}, {{time}}
+   * Basic placeholder replacement for the fallback system.
+   * Supports {{title}}, {{date}} (YYYY-MM-DD), and {{time}} (HH:mm).
    */
   replacePlaceholders(content, title) {
     const now = (0, import_obsidian3.moment)();
@@ -231,6 +247,12 @@ var import_obsidian5 = require("obsidian");
 // src/modal.ts
 var import_obsidian4 = require("obsidian");
 var TitleModal = class extends import_obsidian4.Modal {
+  /**
+   * @param app Obsidian App instance
+   * @param plugin Reference to the main plugin
+   * @param targetFolder Target folder for file search/creation
+   * @param onSubmit Callback function on successful input
+   */
   constructor(app, plugin, targetFolder, onSubmit) {
     super(app);
     this.result = "";
@@ -239,6 +261,9 @@ var TitleModal = class extends import_obsidian4.Modal {
     this.targetFolder = targetFolder;
     this.onSubmit = onSubmit;
   }
+  /**
+   * Creates the modal UI.
+   */
   onOpen() {
     const { contentEl } = this;
     new import_obsidian4.Setting(contentEl).setName("Enter note title").setHeading();
@@ -256,11 +281,14 @@ var TitleModal = class extends import_obsidian4.Modal {
     });
     inputSetting.infoEl.remove();
     new import_obsidian4.Setting(contentEl).addButton(
-      (btn) => btn.setButtonText("Create or link").setCta().onClick(() => this.submit())
+      (btn) => btn.setButtonText("Create or Link").setCta().onClick(() => this.submit())
     ).addButton(
       (btn) => btn.setButtonText("Cancel").onClick(() => this.close())
     );
   }
+  /**
+   * Validates input and executes the submit callback.
+   */
   submit() {
     if (this.isClosed)
       return;
@@ -270,6 +298,9 @@ var TitleModal = class extends import_obsidian4.Modal {
       this.close();
     }
   }
+  /**
+   * Cleans up the modal on close.
+   */
   onClose() {
     this.isClosed = true;
     this.contentEl.empty();
@@ -282,6 +313,9 @@ var FileSuggest = class extends import_obsidian4.AbstractInputSuggest {
     this.plugin = plugin;
     this.targetFolder = targetFolder;
   }
+  /**
+   * Filters all markdown files based on the target folder and query.
+   */
   getSuggestions(query) {
     const lowerCaseQuery = query.toLowerCase();
     const files = this.app.vault.getMarkdownFiles();
@@ -309,6 +343,10 @@ var TriggerSuggest = class extends import_obsidian5.EditorSuggest {
     super(app);
     this.plugin = plugin;
   }
+  /**
+   * Checks if the suggester should be triggered at the current cursor position.
+   * Trigger: '@' at the start of a line or after a space.
+   */
   onTrigger(cursor, editor) {
     const line = editor.getLine(cursor.line).substring(0, cursor.ch);
     const match = /@(\w*)$/.exec(line);
@@ -325,6 +363,9 @@ var TriggerSuggest = class extends import_obsidian5.EditorSuggest {
       query
     };
   }
+  /**
+   * Provides matching mapping suggestions based on previous input.
+   */
   getSuggestions(context) {
     const query = context.query.toLowerCase();
     return this.plugin.settings.triggerTemplates.filter(
@@ -334,6 +375,10 @@ var TriggerSuggest = class extends import_obsidian5.EditorSuggest {
   renderSuggestion(suggestion, el) {
     el.setText(suggestion.trigger);
   }
+  /**
+   * Called when a suggestion is selected.
+   * Opens the modal for title entry.
+   */
   async selectSuggestion(suggestion, evt) {
     const context = this.context;
     if (!context)
@@ -345,7 +390,7 @@ var TriggerSuggest = class extends import_obsidian5.EditorSuggest {
     }).open();
   }
   /**
-   * Handles the full logic of creating a note or linking to an existing one.
+   * Central logic for creating a new note or linking to an existing one.
    */
   async handleNoteCreation(suggestion, title, context) {
     var _a;
@@ -378,16 +423,15 @@ var TriggerSuggest = class extends import_obsidian5.EditorSuggest {
         this.app.workspace.openLinkText(newFile.path, "", true);
         new import_obsidian5.Notice(`Created new note: "${newFile.basename}"`);
       } else {
-        new import_obsidian5.Notice("Error: Failed to create the file.", 5e3);
+        new import_obsidian5.Notice("Error: Failed to create file.", 5e3);
       }
     } catch (e) {
-      console.error("Objects: Error during creation flow:", e);
+      console.error("Objects: Error in creation process:", e);
       new import_obsidian5.Notice("Error creating note. See console for details.");
     }
   }
   /**
-   * Looks for an existing file. 
-   * First checks the specific target path, then searches the entire vault by name.
+   * Looks for a file. First exactly in the target path, then via MetadataCache in the entire vault.
    */
   findExistingFile(title, suggestion) {
     const folder = suggestion.outputPath || this.plugin.settings.defaultOutputPath;
@@ -398,6 +442,9 @@ var TriggerSuggest = class extends import_obsidian5.EditorSuggest {
       return fileAtTable;
     return this.app.metadataCache.getFirstLinkpathDest(title, "");
   }
+  /**
+   * Tries to load the configured template as a TFile.
+   */
   async getTemplateFile(suggestion) {
     var _a;
     const templateName = (_a = suggestion.templateName) == null ? void 0 : _a.trim();
@@ -408,6 +455,9 @@ var TriggerSuggest = class extends import_obsidian5.EditorSuggest {
     const file = this.app.vault.getAbstractFileByPath(templatePath);
     return file instanceof import_obsidian5.TFile ? file : null;
   }
+  /**
+   * Inserts the markdown link into the editor and sets the focus.
+   */
   insertLinkAndFocus(editor, file, sourcePath, alias, context) {
     let link = this.app.fileManager.generateMarkdownLink(file, sourcePath, "", alias).trim();
     editor.replaceRange(link, context.start, context.end);
@@ -422,6 +472,14 @@ var TriggerSuggest = class extends import_obsidian5.EditorSuggest {
 
 // src/main.ts
 var ObjectsPlugin = class extends import_obsidian6.Plugin {
+  constructor() {
+    super(...arguments);
+    /** Current configuration of the plugin */
+    this.settings = DEFAULT_SETTINGS;
+  }
+  /**
+   * Initializes the plugin when loaded into Obsidian.
+   */
   async onload() {
     await this.loadSettings();
     this.templater = new TemplaterHandler(this.app);
@@ -431,6 +489,10 @@ var ObjectsPlugin = class extends import_obsidian6.Plugin {
       this.verifyIntegrations();
     });
   }
+  /**
+   * Checks if necessary third-party plugins (like Templater) are active.
+   * Displays a notice if Templater is missing.
+   */
   verifyIntegrations() {
     const api = this.templater.getApi();
     if (!api) {
@@ -438,9 +500,15 @@ var ObjectsPlugin = class extends import_obsidian6.Plugin {
       new import_obsidian6.Notice(message, 7e3);
     }
   }
+  /**
+   * Loads saved settings and merges them with default values.
+   */
   async loadSettings() {
     this.settings = Object.assign({}, DEFAULT_SETTINGS, await this.loadData());
   }
+  /**
+   * Permanently saves current settings.
+   */
   async saveSettings() {
     await this.saveData(this.settings);
   }

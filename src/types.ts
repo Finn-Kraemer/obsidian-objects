@@ -57,3 +57,13 @@ export interface ITemplaterAPI {
 export interface ITemplaterPlugin extends Plugin {
     templater: ITemplaterAPI;
 }
+
+/**
+ * Interface for internal Obsidian plugin management.
+ */
+export interface InternalPlugins {
+    enabledPlugins: Set<string>;
+    plugins: {
+        [key: string]: any;
+    };
+}

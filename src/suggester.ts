@@ -69,15 +69,15 @@ export class TriggerSuggest extends EditorSuggest<TriggerTemplateMapping> {
      * Called when a suggestion is selected.
      * Opens the modal for title entry.
      */
-    async selectSuggestion(suggestion: TriggerTemplateMapping, evt: MouseEvent | KeyboardEvent) {
+    selectSuggestion(suggestion: TriggerTemplateMapping, evt: MouseEvent | KeyboardEvent) {
         const context = this.context;
         if (!context) return;
 
         const folder = suggestion.outputPath || this.plugin.settings.defaultOutputPath;
         const targetFolder = sanitizeFolderPath(folder);
 
-        new TitleModal(this.app, this.plugin, targetFolder, async (title) => {
-            await this.handleNoteCreation(suggestion, title, context);
+        new TitleModal(this.app, this.plugin, targetFolder, (title) => {
+            void this.handleNoteCreation(suggestion, title, context);
         }).open();
     }
 
@@ -103,7 +103,7 @@ export class TriggerSuggest extends EditorSuggest<TriggerTemplateMapping> {
         }
 
         // 2. Resolve template (don't stop if missing, just warn)
-        const templateFile = await this.getTemplateFile(suggestion);
+        const templateFile = this.getTemplateFile(suggestion);
         if (!templateFile && suggestion.templateName) {
              new Notice(`Template "${suggestion.templateName}" not found. Creating note without template.`, 3000);
         }
@@ -133,7 +133,7 @@ export class TriggerSuggest extends EditorSuggest<TriggerTemplateMapping> {
                 new Notice("Error: Failed to create file.", 5000);
             }
         } catch (e) {
-            console.error("Objects: Error in creation process:", e);
+            console.warn("Objects: Error in creation process:", e);
             new Notice("Error creating note. See console for details.");
         }
     }
@@ -157,7 +157,7 @@ export class TriggerSuggest extends EditorSuggest<TriggerTemplateMapping> {
     /**
      * Tries to load the configured template as a TFile.
      */
-    private async getTemplateFile(suggestion: TriggerTemplateMapping): Promise<TFile | null> {
+    private getTemplateFile(suggestion: TriggerTemplateMapping): TFile | null {
         const templateName = suggestion.templateName?.trim();
         if (!templateName) return null;
 

@@ -65,7 +65,7 @@ export class TitleModal extends Modal {
         new Setting(contentEl)
             .addButton((btn) =>
                 btn
-                    .setButtonText('Create or Link')
+                    .setButtonText('Create or link')
                     .setCta()
                     .onClick(() => this.submit())
             )

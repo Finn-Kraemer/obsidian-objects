@@ -36,7 +36,7 @@ export class SettingsTab extends PluginSettingTab {
     private renderStatus(containerEl: HTMLElement) {
         const isTemplaterActive = !!this.plugin.templater.getApi();
         new Setting(containerEl)
-            .setName('Integrations status')
+            .setName('Integration status')
             .setDesc(isTemplaterActive ? 'Templater integration is active.' : 'Templater plugin was not detected.')
             .then(s => {
                 const status = s.controlEl.createSpan({
@@ -44,15 +44,20 @@ export class SettingsTab extends PluginSettingTab {
                     text: isTemplaterActive ? '✔ Active' : '✘ Missing',
                 });
                 status.addClass(isTemplaterActive ? 'objects-status-active' : 'objects-status-missing');
+                if (isTemplaterActive) {
+                    status.setCssProps({ '--status-color': 'var(--color-green)' });
+                } else {
+                    status.setCssProps({ '--status-color': 'var(--color-red)' });
+                }
             });
     }
 
     /**
-     * Renders general configuration like template and output folders.
+     * Renders configuration like template and output folders.
      */
     private renderGeneralConfig(containerEl: HTMLElement) {
         new Setting(containerEl)
-            .setName('General configuration')
+            .setName('Path configuration')
             .setHeading();
 
         new Setting(containerEl)

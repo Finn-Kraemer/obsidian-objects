@@ -1,5 +1,5 @@
 import { App, TFile, normalizePath, moment } from 'obsidian';
-import { ITemplaterAPI, ITemplaterPlugin } from './types';
+import { ITemplaterAPI, ITemplaterPlugin, InternalPlugins } from './types';
 import { sanitizeFolderPath } from './utils';
 
 /**
@@ -18,7 +18,7 @@ export class TemplaterHandler {
      * @returns The Templater API or null if the plugin is not active.
      */
     getApi(): ITemplaterAPI | null {
-        const plugins = (this.app as any).plugins;
+        const plugins = (this.app as any).plugins as InternalPlugins | undefined;
         if (!plugins || !plugins.enabledPlugins.has('templater-obsidian')) {
             return null;
         }
@@ -49,7 +49,7 @@ export class TemplaterHandler {
         try {
             return await this.app.vault.create(newNotePath, content);
         } catch (error) {
-            console.error(`Objects: Failed to create file at "${newNotePath}":`, error);
+            console.warn(`Objects: Failed to create file at "${newNotePath}":`, error);
             return null;
         }
     }
