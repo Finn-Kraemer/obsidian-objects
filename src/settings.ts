@@ -17,7 +17,7 @@ export class SettingsTab extends PluginSettingTab {
         const { containerEl } = this;
         containerEl.empty();
 
-        containerEl.createEl('h2', { text: 'Obsidian Objects Settings' });
+        containerEl.createEl('h2', { text: 'Objects Settings' });
 
         this.renderStatus(containerEl);
         this.renderGeneralConfig(containerEl);

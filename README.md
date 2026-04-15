@@ -1,4 +1,4 @@
-# 💎 Obsidian Objects
+# 💎 Objects
 
 > **Accelerate your thought process.** Create structured notes from templates directly in your flow using simple `@-triggers`.
 
@@ -9,9 +9,9 @@
 
 ## Introduction
 
-**Obsidian Objects** is a productivity-focused plugin designed to bridge the gap between thinking and documenting. Instead of breaking your flow to create a new file, navigate to a folder, and apply a template, simply type `@` followed by your object type.
+**Objects** is a productivity-focused plugin designed to bridge the gap between thinking and documenting. Instead of breaking your flow to create a new file, navigate to a folder, and apply a template, simply type `@` followed by your object type.
 
-Whether you're mentioning a new `@person`, starting an `@atomic` note, or spinning up a `@project`, Obsidian Objects handles the file creation, folder organization, and templating in a single, seamless interaction.
+Whether you're mentioning a new `@person`, starting an `@atomic` note, or spinning up a `@project`, Objects handles the file creation, folder organization, and templating in a single, seamless interaction.
 
 ---
 
@@ -49,7 +49,7 @@ Whether you're mentioning a new `@person`, starting an `@atomic` note, or spinni
 
 ### Via Obsidian (Recommended)
 1. Open **Settings** > **Community Plugins**.
-2. Click **Browse** and search for `Obsidian Objects`.
+2. Click **Browse** and search for `Objects`.
 3. Click **Install**, then **Enable**.
 
 ### Manual Installation
@@ -71,7 +71,7 @@ Whether you're mentioning a new `@person`, starting an `@atomic` note, or spinni
 6. **Result**: A link is inserted at your cursor, and the new note is created and opened in the background.
 
 ### 2. Configuration
-Head to **Settings > Obsidian Objects** to customize your experience:
+Head to **Settings > Objects** to customize your experience:
 
 | Setting | Description |
 | :--- | :--- |

@@ -9,7 +9,7 @@ export default class ObsidianObjectsPlugin extends Plugin {
     templater: TemplaterHandler;
 
     async onload() {
-        console.log('Obsidian Objects: Loading...');
+        console.log('Objects: Loading...');
         await this.loadSettings();
         
         this.templater = new TemplaterHandler(this.app);
@@ -25,11 +25,11 @@ export default class ObsidianObjectsPlugin extends Plugin {
     private verifyIntegrations() {
         const api = this.templater.getApi();
         if (!api) {
-            const message = 'Obsidian Objects: The "Templater" plugin is not active. Please install and enable it for full functionality.';
+            const message = 'Objects: The "Templater" plugin is not active. Please install and enable it for full functionality.';
             new Notice(message, 7000);
             console.warn(message);
         } else {
-            console.log('Obsidian Objects: Templater plugin found and ready.');
+            console.log('Objects: Templater plugin found and ready.');
         }
     }
 
