@@ -1,6 +1,6 @@
 import { App, PluginSettingTab, Setting, TFile, AbstractInputSuggest, debounce } from 'obsidian';
 import ObjectsPlugin from './main';
-import { DEFAULT_SETTINGS, TriggerTemplateMapping } from './types';
+import { TriggerTemplateMapping } from './types';
 import { sanitizeFolderPath } from './utils';
 
 /**

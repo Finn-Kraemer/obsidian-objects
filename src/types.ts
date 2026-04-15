@@ -64,6 +64,6 @@ export interface ITemplaterPlugin extends Plugin {
 export interface InternalPlugins {
     enabledPlugins: Set<string>;
     plugins: {
-        [key: string]: any;
+        [key: string]: unknown;
     };
 }

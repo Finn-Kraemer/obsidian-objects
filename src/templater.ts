@@ -18,7 +18,7 @@ export class TemplaterHandler {
      * @returns The Templater API or null if the plugin is not active.
      */
     getApi(): ITemplaterAPI | null {
-        const plugins = (this.app as any).plugins as InternalPlugins | undefined;
+        const plugins = (this.app as unknown as { plugins: InternalPlugins }).plugins;
         if (!plugins || !plugins.enabledPlugins.has('templater-obsidian')) {
             return null;
         }

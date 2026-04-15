@@ -69,7 +69,7 @@ export class TriggerSuggest extends EditorSuggest<TriggerTemplateMapping> {
      * Called when a suggestion is selected.
      * Opens the modal for title entry.
      */
-    selectSuggestion(suggestion: TriggerTemplateMapping, evt: MouseEvent | KeyboardEvent) {
+    selectSuggestion(suggestion: TriggerTemplateMapping) {
         const context = this.context;
         if (!context) return;
 
@@ -173,7 +173,7 @@ export class TriggerSuggest extends EditorSuggest<TriggerTemplateMapping> {
      */
     private insertLinkAndFocus(editor: Editor, file: TFile, sourcePath: string, alias: string, context: EditorSuggestContext) {
         // Generate a clean markdown link (considering Obsidian settings)
-        let link = this.app.fileManager.generateMarkdownLink(file, sourcePath, '', alias).trim();
+        const link = this.app.fileManager.generateMarkdownLink(file, sourcePath, '', alias).trim();
         editor.replaceRange(link, context.start, context.end);
         
         // Set cursor behind the newly inserted link
