@@ -25,5 +25,3 @@ This vault is pre-configured to show you how **Objects** works.
 ---
 
 *Note: For full Templater support, Templater would need to be installed separately in this vault.*
-
-[[Thomas Gast]] ist ein [[Exlegionär]] 
