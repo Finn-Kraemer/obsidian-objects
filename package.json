@@ -1,6 +1,6 @@
 {
   "name": "objects",
-  "version": "1.0.7",
+  "version": "1.0.8",
   "description": "A plugin for Obsidian.",
   "main": "main.js",
   "scripts": {
