@@ -126,8 +126,12 @@ export class TriggerSuggest extends EditorSuggest<TriggerTemplateMapping> {
             
             if (newFile) {
                 this.insertLinkAndFocus(editor, newFile, sourcePath, title, context);
-                // Open newly created file in a new tab (pane)
-                this.app.workspace.openLinkText(newFile.path, '', true);
+                
+                // Open newly created file in a new tab (pane) if configured
+                if (this.plugin.settings.openNewNote) {
+                    this.app.workspace.openLinkText(newFile.path, '', true);
+                }
+                
                 new Notice(`Created new note: "${newFile.basename}"`);
             } else {
                 new Notice("Error: Failed to create file.", 5000);

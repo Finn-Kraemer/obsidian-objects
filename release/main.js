@@ -37,7 +37,8 @@ var DEFAULT_SETTINGS = {
     { trigger: "@atomic", templateName: "atomic", outputPath: "Zettelkasten/", enabled: true },
     { trigger: "@person", templateName: "person", enabled: true }
   ],
-  defaultOutputPath: ""
+  defaultOutputPath: "",
+  openNewNote: true
 };
 
 // src/settings.ts
@@ -103,6 +104,10 @@ var SettingsTab = class extends import_obsidian2.PluginSettingTab {
     }));
     new import_obsidian2.Setting(containerEl).setName("Default output path").setDesc("Fallback folder for newly created notes, if not defined in the mapping.").addText((text) => text.setPlaceholder("Inbox").setValue(this.plugin.settings.defaultOutputPath).onChange((v) => {
       this.plugin.settings.defaultOutputPath = sanitizeFolderPath(v);
+      this.debouncedSave();
+    }));
+    new import_obsidian2.Setting(containerEl).setName("Open created note").setDesc("Whether to automatically open the newly created note in a new tab.").addToggle((toggle) => toggle.setValue(this.plugin.settings.openNewNote).onChange((v) => {
+      this.plugin.settings.openNewNote = v;
       this.debouncedSave();
     }));
   }
@@ -430,7 +435,9 @@ var TriggerSuggest = class extends import_obsidian5.EditorSuggest {
       );
       if (newFile) {
         this.insertLinkAndFocus(editor, newFile, sourcePath, title, context);
-        this.app.workspace.openLinkText(newFile.path, "", true);
+        if (this.plugin.settings.openNewNote) {
+          this.app.workspace.openLinkText(newFile.path, "", true);
+        }
         new import_obsidian5.Notice(`Created new note: "${newFile.basename}"`);
       } else {
         new import_obsidian5.Notice("Error: Failed to create file.", 5e3);

@@ -24,6 +24,8 @@ export interface ObsidianObjectsSettings {
     triggerTemplates: TriggerTemplateMapping[];
     /** Global standard output folder */
     defaultOutputPath: string;
+    /** Whether to open the newly created note in a new tab */
+    openNewNote: boolean;
 }
 
 /**
@@ -37,6 +39,7 @@ export const DEFAULT_SETTINGS: ObsidianObjectsSettings = {
         { trigger: '@person', templateName: 'person', enabled: true }
     ],
     defaultOutputPath: '',
+    openNewNote: true,
 };
 
 /**

@@ -83,6 +83,16 @@ export class SettingsTab extends PluginSettingTab {
                     this.plugin.settings.defaultOutputPath = sanitizeFolderPath(v); 
                     this.debouncedSave(); 
                 }));
+
+        new Setting(containerEl)
+            .setName('Open created note')
+            .setDesc('Whether to automatically open the newly created note in a new tab.')
+            .addToggle(toggle => toggle
+                .setValue(this.plugin.settings.openNewNote)
+                .onChange(v => {
+                    this.plugin.settings.openNewNote = v;
+                    this.debouncedSave();
+                }));
     }
 
     /**
