@@ -103,6 +103,18 @@ Objects is primarily designed for **Desktop** environments to maximize productiv
 
 ## Installation
 
+### Via Obsidian (Recommended once released)
+1. Open **Settings** > **Community Plugins**.
+2. Click **Browse** and search for `Objects`.
+3. Click **Install**, then **Enable**.
+
+### Via BRAT (For Beta Testing)
+1. Install the [BRAT plugin](https://github.com/TfTHacker/obsidian42-brat) from the Community Plugins store.
+2. Open **Settings** > **BRAT**.
+3. Click **Add Beta Plugin**.
+4. Paste the URL of this repository: `https://github.com/Finn-Kraemer/obsidian-objects` or `Finn-Kraemer/obsidian-objects`
+5. Click **Add Plugin** and then enable **Objects** in your Community Plugins settings.
+
 ### Manual Installation
 1. Download the `main.js` and `manifest.json` from the [latest release](https://github.com/Finn-Kraemer/obsidian-objects/releases).
 2. Create a folder named `obsidian-objects` in your vault's `.obsidian/plugins/` directory.
