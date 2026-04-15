@@ -19,7 +19,7 @@ Whether you're mentioning a new `@person`, starting an `@atomic` note, or spinni
 
 - **Instant Creation**: Trigger a suggestion list anywhere in your editor by typing `@`.
 - **Smart Organization**: Automatically routes new notes to specific folders based on the trigger type.
-- **Templater Integration**: Native support for the [Templater](https://github.com/SilentVoid13/Templater) plugin for advanced dynamic content.
+- **Templater Integration**: Native support for the [Templater](https://github.com/SilentVoid13/Templater) plugin for advanced dynamic content. **Note**: For full Templater syntax support, ensure the option **"Trigger Templater on new file creation"** is enabled in the Templater settings.
 - **Automatic Linking**: If a note with that name already exists, the plugin intelligently links to it instead of creating a duplicate.
 - **Fallback Logic**: Works out-of-the-box even without Templater, using basic placeholder replacement (`{{title}}`, `{{date}}`, `{{time}}`).
 - **Fully Configurable**: Map any trigger (e.g., `@book`, `@meeting`, `@idea`) to any template and destination folder.

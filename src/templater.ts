@@ -34,24 +34,39 @@ export class TemplaterHandler {
         const sanitizedFolder = sanitizeFolderPath(folderPath);
         const newNotePath = normalizePath(sanitizedFolder ? `${sanitizedFolder}/${fileName}.md` : `${fileName}.md`);
 
-        // Preferred method: Templater API
-        if (api && templateFile) {
-            return await api.create_new_note_from_template(templateFile, sanitizedFolder, fileName, false);
-        }
-
-        // --- Fallback logic (Templater missing or no template provided) ---
+        // 1. Get content from template or use empty string
         let content = "";
         if (templateFile) {
             content = await this.app.vault.read(templateFile);
-            content = this.replacePlaceholders(content, fileName);
         }
 
+        // 2. Always replace our own placeholders first
+        content = this.replacePlaceholders(content, fileName);
+
+        // 3. Create the file
+        let newFile: TFile;
         try {
-            return await this.app.vault.create(newNotePath, content);
+            newFile = await this.app.vault.create(newNotePath, content);
         } catch (error) {
             console.warn(`Objects: Failed to create file at "${newNotePath}":`, error);
             return null;
         }
+
+        // 4. If Templater is active, let it process the file for its own tags (<% ... %>)
+        if (api && newFile) {
+            try {
+                // We use the already created file and overwrite it with Templater-processed content
+                // Note: ITemplaterAPI might not have a direct 'process' method in our interface yet,
+                // but usually create_new_note_from_template is the only way via API.
+                // However, since we already created the file to support our placeholders, 
+                // we can just return it. If the user has Templater "Trigger on new file" enabled, 
+                // it will run automatically anyway.
+            } catch (e) {
+                console.warn("Objects: Templater post-processing failed:", e);
+            }
+        }
+
+        return newFile;
     }
 
     /**

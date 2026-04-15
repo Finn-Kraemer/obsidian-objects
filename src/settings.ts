@@ -37,7 +37,9 @@ export class SettingsTab extends PluginSettingTab {
         const isTemplaterActive = !!this.plugin.templater.getApi();
         new Setting(containerEl)
             .setName('Integration status')
-            .setDesc(isTemplaterActive ? 'Templater integration is active.' : 'Templater plugin was not detected.')
+            .setDesc(isTemplaterActive 
+                ? 'Templater integration is active. Note: Ensure "Trigger Templater on new file creation" is enabled in Templater settings for full syntax support.' 
+                : 'Templater plugin was not detected.')
             .then(s => {
                 const status = s.controlEl.createSpan({
                     cls: 'objects-status-indicator',
