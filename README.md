@@ -33,16 +33,19 @@ If you've experimented with apps like **Anytype** or **Capacities** because you 
 <div align="center">
   <figure>
     <img src="assets/settings.png" alt="Settings Page" width="600" />
+    <br/>
     <figcaption><i>1. Configure custom triggers and mappings</i></figcaption>
   </figure>
   <br/>
   <figure>
     <img src="assets/select_objects.png" alt="Select Object Suggestion" width="600" />
+    <br/>
     <figcaption><i>2. Trigger with @ and select your object type</i></figcaption>
   </figure>
   <br/>
   <figure>
     <img src="assets/create_object.png" alt="Enter Title Modal" width="600" />
+    <br/>
     <figcaption><i>3. Enter the name of your new object</i></figcaption>
   </figure>
 </div>
