@@ -311,11 +311,14 @@ var TriggerSuggest = class extends import_obsidian5.EditorSuggest {
   }
   onTrigger(cursor, editor) {
     const line = editor.getLine(cursor.line).substring(0, cursor.ch);
-    const match = line.match(/(?:^|\s)@(\w*)$/);
+    const match = /@(\w*)$/.exec(line);
     if (!match)
       return null;
     const query = match[1];
-    const triggerStart = cursor.ch - (query.length + 1);
+    const triggerStart = line.lastIndexOf("@");
+    if (triggerStart > 0 && line.charAt(triggerStart - 1) !== " ") {
+      return null;
+    }
     return {
       start: { line: cursor.line, ch: triggerStart },
       end: cursor,

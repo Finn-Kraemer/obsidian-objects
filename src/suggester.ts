@@ -23,14 +23,21 @@ export class TriggerSuggest extends EditorSuggest<TriggerTemplateMapping> {
     }
 
     onTrigger(cursor: EditorPosition, editor: Editor): EditorSuggestTriggerInfo | null {
+        // On mobile, we need to be very careful with how we detect the trigger
         const line = editor.getLine(cursor.line).substring(0, cursor.ch);
-        const match = line.match(/(?:^|\s)@(\w*)$/);
-
+        
+        // Match '@' preceded by a space or start of line
+        const match = /@(\w*)$/.exec(line);
         if (!match) return null;
 
         const query = match[1];
-        const triggerStart = cursor.ch - (query.length + 1);
+        const triggerStart = line.lastIndexOf('@');
         
+        // Ensure there is a space before @ or it's at the start of the line
+        if (triggerStart > 0 && line.charAt(triggerStart - 1) !== ' ') {
+            return null;
+        }
+
         return {
             start: { line: cursor.line, ch: triggerStart },
             end: cursor,
