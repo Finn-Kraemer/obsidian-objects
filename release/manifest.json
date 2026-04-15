@@ -1,10 +1,10 @@
 {
-  "id": "obsidian-objects",
-  "name": "Obsidian Objects",
-  "version": "1.0.2",
-  "minAppVersion": "1.5.0",
-  "description": "A plugin that accelerates note creation from templates using @-triggers.",
-  "author": "Finn-Kraemer",
-  "authorUrl": "https://github.com/Finn-Kraemer",
-  "isDesktopOnly": false
+	"id": "template-objects",
+	"name": "Obsidian Objects",
+	"version": "1.0.3",
+	"minAppVersion": "1.5.0",
+	"description": "Instantly create and organize notes from templates using customizable @-triggers without breaking your flow.",
+	"author": "Finn-Kraemer",
+	"authorUrl": "https://github.com/Finn-Kraemer",
+	"isDesktopOnly": false
 }
