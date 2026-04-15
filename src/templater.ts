@@ -1,4 +1,4 @@
-import { App, TFile, normalizePath } from 'obsidian';
+import { App, TFile, normalizePath, moment } from 'obsidian';
 import { ITemplaterAPI, ITemplaterPlugin } from './types';
 import { sanitizeFolderPath } from './utils';
 
@@ -44,7 +44,8 @@ export class TemplaterHandler {
         try {
             return await this.app.vault.create(newNotePath, content);
         } catch (error) {
-            console.error(`Obsidian Objects: Failed to create file at "${newNotePath}":`, error);
+            // Only log errors, as per guidelines
+            console.error(`Objects: Failed to create file at "${newNotePath}":`, error);
             return null;
         }
     }
@@ -53,7 +54,7 @@ export class TemplaterHandler {
      * Basic placeholder replacement for {{title}}, {{date}}, {{time}}
      */
     private replacePlaceholders(content: string, title: string): string {
-        const now = (window as any).moment();
+        const now = moment();
         const replacements: Record<string, string> = {
             '{{title}}': title,
             '{{date}}': now.format("YYYY-MM-DD"),

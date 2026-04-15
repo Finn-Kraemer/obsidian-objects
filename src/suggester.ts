@@ -9,15 +9,15 @@ import {
     Notice, 
     TFile 
 } from 'obsidian';
-import ObsidianObjectsPlugin from './main';
+import ObjectsPlugin from './main';
 import { TriggerTemplateMapping } from './types';
 import { TitleModal } from './modal';
 import { sanitizeFolderPath, sanitizeFileName } from './utils';
 
 export class TriggerSuggest extends EditorSuggest<TriggerTemplateMapping> {
-    private plugin: ObsidianObjectsPlugin;
+    private plugin: ObjectsPlugin;
 
-    constructor(app: App, plugin: ObsidianObjectsPlugin) {
+    constructor(app: App, plugin: ObjectsPlugin) {
         super(app);
         this.plugin = plugin;
     }
@@ -71,28 +71,27 @@ export class TriggerSuggest extends EditorSuggest<TriggerTemplateMapping> {
     ) {
         const editor = context.editor;
         const sanitizedTitle = sanitizeFileName(title);
-        const folder = suggestion.outputPath || this.plugin.settings.defaultOutputPath;
-        const targetFolder = sanitizeFolderPath(folder);
-        const newNotePath = normalizePath(targetFolder ? `${targetFolder}/${sanitizedTitle}.md` : `${sanitizedTitle}.md`);
-
-        const existingFile = this.app.vault.getAbstractFileByPath(newNotePath);
         const sourcePath = this.app.workspace.getActiveFile()?.path || '';
 
-        // 1. Check for existing file
-        if (existingFile instanceof TFile) {
+        // 1. Try to find an existing file (anywhere in the vault or at target path)
+        const existingFile = this.findExistingFile(sanitizedTitle, suggestion);
+        
+        if (existingFile) {
             this.insertLinkAndFocus(editor, existingFile, sourcePath, title, context);
             new Notice(`Linked to existing note: "${existingFile.basename}"`);
             return;
         }
 
-        // 2. Resolve template
+        // 2. Resolve template (don't stop if missing, just warn)
         const templateFile = await this.getTemplateFile(suggestion);
         if (!templateFile && suggestion.templateName) {
-             new Notice(`Template "${suggestion.templateName}" not found.`, 5000);
-             return;
+             new Notice(`Template "${suggestion.templateName}" not found. Creating note without template.`, 3000);
         }
 
         try {
+            const folder = suggestion.outputPath || this.plugin.settings.defaultOutputPath;
+            const targetFolder = sanitizeFolderPath(folder);
+
             // 3. Ensure folder exists
             if (targetFolder && !this.app.vault.getAbstractFileByPath(targetFolder)) {
                 await this.app.vault.createFolder(targetFolder);
@@ -113,9 +112,26 @@ export class TriggerSuggest extends EditorSuggest<TriggerTemplateMapping> {
                 new Notice("Error: Failed to create the file.", 5000);
             }
         } catch (e) {
-            console.error("Obsidian Objects: Error during creation flow:", e);
+            console.error("Objects: Error during creation flow:", e);
             new Notice("Error creating note. See console for details.");
         }
+    }
+
+    /**
+     * Looks for an existing file. 
+     * First checks the specific target path, then searches the entire vault by name.
+     */
+    private findExistingFile(title: string, suggestion: TriggerTemplateMapping): TFile | null {
+        const folder = suggestion.outputPath || this.plugin.settings.defaultOutputPath;
+        const targetFolder = sanitizeFolderPath(folder);
+        const specificPath = normalizePath(targetFolder ? `${targetFolder}/${title}.md` : `${title}.md`);
+
+        // Check specific location first
+        const fileAtTable = this.app.vault.getAbstractFileByPath(specificPath);
+        if (fileAtTable instanceof TFile) return fileAtTable;
+
+        // Fallback: search anywhere in the vault
+        return this.app.metadataCache.getFirstLinkpathDest(title, "");
     }
 
     private async getTemplateFile(suggestion: TriggerTemplateMapping): Promise<TFile | null> {

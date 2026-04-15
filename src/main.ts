@@ -1,15 +1,14 @@
 import { Plugin, Notice } from 'obsidian';
-import { ObsidianObjectsSettings, DEFAULT_SETTINGS, ITemplaterAPI } from './types';
+import { ObsidianObjectsSettings, DEFAULT_SETTINGS } from './types';
 import { SettingsTab } from './settings';
 import { TemplaterHandler } from './templater';
 import { TriggerSuggest } from './suggester';
 
-export default class ObsidianObjectsPlugin extends Plugin {
+export default class ObjectsPlugin extends Plugin {
     settings: ObsidianObjectsSettings;
     templater: TemplaterHandler;
 
     async onload() {
-        console.log('Objects: Loading...');
         await this.loadSettings();
         
         this.templater = new TemplaterHandler(this.app);
@@ -27,9 +26,6 @@ export default class ObsidianObjectsPlugin extends Plugin {
         if (!api) {
             const message = 'Objects: The "Templater" plugin is not active. Please install and enable it for full functionality.';
             new Notice(message, 7000);
-            console.warn(message);
-        } else {
-            console.log('Objects: Templater plugin found and ready.');
         }
     }
 

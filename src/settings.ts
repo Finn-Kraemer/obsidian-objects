@@ -1,13 +1,13 @@
 import { App, PluginSettingTab, Setting, TFile, AbstractInputSuggest, debounce } from 'obsidian';
-import ObsidianObjectsPlugin from './main';
-import { ObsidianObjectsSettings, DEFAULT_SETTINGS, TriggerTemplateMapping } from './types';
+import ObjectsPlugin from './main';
+import { DEFAULT_SETTINGS, TriggerTemplateMapping } from './types';
 import { sanitizeFolderPath } from './utils';
 
 export class SettingsTab extends PluginSettingTab {
-    private readonly plugin: ObsidianObjectsPlugin;
+    private readonly plugin: ObjectsPlugin;
     private readonly debouncedSave: () => void;
 
-    constructor(app: App, plugin: ObsidianObjectsPlugin) {
+    constructor(app: App, plugin: ObjectsPlugin) {
         super(app, plugin);
         this.plugin = plugin;
         this.debouncedSave = debounce(() => this.plugin.saveSettings(), 500, true);
@@ -16,8 +16,6 @@ export class SettingsTab extends PluginSettingTab {
     display(): void {
         const { containerEl } = this;
         containerEl.empty();
-
-        containerEl.createEl('h2', { text: 'Objects Settings' });
 
         this.renderStatus(containerEl);
         this.renderGeneralConfig(containerEl);
@@ -28,22 +26,24 @@ export class SettingsTab extends PluginSettingTab {
     private renderStatus(containerEl: HTMLElement) {
         const isTemplaterActive = !!this.plugin.templater.getApi();
         new Setting(containerEl)
-            .setName('Integrations Status')
-            .setDesc(isTemplaterActive ? 'Templater integration is active.' : 'WARNING: Templater plugin is not detected.')
+            .setName('Integrations status')
+            .setDesc(isTemplaterActive ? 'Templater integration is active.' : 'Templater plugin is not detected.')
             .then(s => {
                 const status = s.controlEl.createSpan({
+                    cls: 'objects-status-indicator',
                     text: isTemplaterActive ? '✔ Active' : '✘ Missing',
                 });
-                status.style.fontWeight = 'bold';
-                status.style.color = isTemplaterActive ? 'var(--text-success)' : 'var(--text-error)';
+                status.addClass(isTemplaterActive ? 'objects-status-active' : 'objects-status-missing');
             });
     }
 
     private renderGeneralConfig(containerEl: HTMLElement) {
-        containerEl.createEl('h3', { text: 'General Configuration' });
+        new Setting(containerEl)
+            .setName('General configuration')
+            .setHeading();
 
         new Setting(containerEl)
-            .setName('Template Folder')
+            .setName('Template folder')
             .setDesc('Root directory for your markdown templates.')
             .addText(text => text
                 .setPlaceholder('Templates')
@@ -54,7 +54,7 @@ export class SettingsTab extends PluginSettingTab {
                 }));
 
         new Setting(containerEl)
-            .setName('Default Output Path')
+            .setName('Default output path')
             .setDesc('Fallback folder for newly created notes.')
             .addText(text => text
                 .setPlaceholder('Inbox')
@@ -66,7 +66,9 @@ export class SettingsTab extends PluginSettingTab {
     }
 
     private renderTriggerMappings(containerEl: HTMLElement) {
-        containerEl.createEl('h3', { text: 'Trigger Mappings' });
+        new Setting(containerEl)
+            .setName('Trigger mappings')
+            .setHeading();
 
         this.plugin.settings.triggerTemplates.forEach((mapping, index) => {
             this.renderMappingRow(containerEl, mapping, index);
@@ -74,7 +76,7 @@ export class SettingsTab extends PluginSettingTab {
 
         new Setting(containerEl)
             .addButton(btn => btn
-                .setButtonText('Add New Mapping')
+                .setButtonText('Add new mapping')
                 .setCta()
                 .onClick(async () => {
                     this.plugin.settings.triggerTemplates.push({ trigger: '@', templateName: '', enabled: true });
@@ -109,7 +111,7 @@ export class SettingsTab extends PluginSettingTab {
                     });
             })
             .addText(t => t
-                .setPlaceholder('Target Folder')
+                .setPlaceholder('Target folder')
                 .setValue(mapping.outputPath || '')
                 .onChange(v => {
                     mapping.outputPath = sanitizeFolderPath(v);
@@ -117,7 +119,7 @@ export class SettingsTab extends PluginSettingTab {
                 }))
             .addExtraButton(b => b
                 .setIcon('trash')
-                .setTooltip('Delete Mapping')
+                .setTooltip('Delete mapping')
                 .onClick(async () => {
                     this.plugin.settings.triggerTemplates.splice(index, 1);
                     await this.plugin.saveSettings();
@@ -129,17 +131,15 @@ export class SettingsTab extends PluginSettingTab {
     }
 
     private renderFooter(containerEl: HTMLElement) {
-        const footer = containerEl.createDiv();
-        footer.style.marginTop = '4rem';
-        footer.style.textAlign = 'center';
-        footer.style.color = 'var(--text-muted)';
-        footer.style.fontSize = 'var(--font-ui-smaller)';
-        footer.textContent = 'Settings are saved automatically. Triggers must start with @.';
+        containerEl.createDiv({
+            cls: 'objects-settings-footer',
+            text: 'Settings are saved automatically. Triggers must start with @.'
+        });
     }
 }
 
 class TemplateSuggest extends AbstractInputSuggest<TFile> {
-    constructor(app: App, private inputEl: HTMLInputElement, private plugin: ObsidianObjectsPlugin) {
+    constructor(app: App, private inputEl: HTMLInputElement, private plugin: ObjectsPlugin) {
         super(app, inputEl);
     }
     getSuggestions(query: string): TFile[] {

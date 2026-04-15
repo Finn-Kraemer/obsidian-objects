@@ -1,14 +1,15 @@
 import { App, Modal, Setting, TFile, AbstractInputSuggest } from 'obsidian';
-import ObsidianObjectsPlugin from './main';
+import ObjectsPlugin from './main';
 import { sanitizeFolderPath } from './utils';
 
 export class TitleModal extends Modal {
     private result: string = "";
     private onSubmit: (result: string) => void;
     private targetFolder: string;
-    private plugin: ObsidianObjectsPlugin;
+    private plugin: ObjectsPlugin;
+    private isClosed: boolean = false;
 
-    constructor(app: App, plugin: ObsidianObjectsPlugin, targetFolder: string, onSubmit: (result: string) => void) {
+    constructor(app: App, plugin: ObjectsPlugin, targetFolder: string, onSubmit: (result: string) => void) {
         super(app);
         this.plugin = plugin;
         this.targetFolder = targetFolder;
@@ -17,9 +18,12 @@ export class TitleModal extends Modal {
 
     onOpen() {
         const { contentEl } = this;
-        contentEl.createEl('h2', { text: 'Enter Note Title' });
 
-        const setting = new Setting(contentEl)
+        new Setting(contentEl)
+            .setName('Enter note title')
+            .setHeading();
+
+        const inputSetting = new Setting(contentEl)
             .setName('Title')
             .addText((text) => {
                 text.setPlaceholder('My new note')
@@ -40,11 +44,14 @@ export class TitleModal extends Modal {
                 // Focus input immediately
                 text.inputEl.focus();
             });
+        
+        // Hide the "Title" label to keep it clean, as heading is enough
+        inputSetting.infoEl.remove();
 
         new Setting(contentEl)
             .addButton((btn) =>
                 btn
-                    .setButtonText('Create / Link')
+                    .setButtonText('Create or link')
                     .setCta()
                     .onClick(() => this.submit())
             )
@@ -54,7 +61,7 @@ export class TitleModal extends Modal {
     }
 
     private submit() {
-        if (!this.app.workspace.activeLeaf) return; // Modal already closed
+        if (this.isClosed) return;
 
         const trimmed = this.result.trim();
         if (trimmed.length > 0) {
@@ -64,6 +71,7 @@ export class TitleModal extends Modal {
     }
 
     onClose() {
+        this.isClosed = true;
         this.contentEl.empty();
     }
 }
@@ -72,7 +80,7 @@ class FileSuggest extends AbstractInputSuggest<TFile> {
     constructor(
         app: App, 
         private inputEl: HTMLInputElement, 
-        private plugin: ObsidianObjectsPlugin, 
+        private plugin: ObjectsPlugin, 
         private targetFolder: string
     ) {
         super(app, inputEl);
