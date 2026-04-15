@@ -7,6 +7,16 @@
 
 ---
 
+## Why Objects?
+
+This plugin was built for a specific kind of note-taker: **The Obsidian Lover who misses Objects.**
+
+If you've experimented with apps like **Anytype** or **Capacities** because you loved their object-oriented approach, but ultimately found yourself returning to the power, privacy, and flexibility of **Obsidian**, then this is for you. ❤️
+
+**Objects** brings that missing piece to your vault. No more manual folder navigation or messy template applications—just pure, structured creation without leaving your keyboard.
+
+---
+
 ## What it does
 
 **Objects** bridges the gap between thinking and documenting. Instead of breaking your creative flow to manually create files, navigate folders, or apply templates, you simply define "Objects" (like `@person`, `@meeting`, or `@atomic-note`) and trigger them anywhere.
@@ -37,6 +47,19 @@
   </figure>
 </div>
 
+
+---
+
+## Try it out (Demo Vault)
+
+To see **Objects** in action without configuring anything, check out our **Demo Vault**:
+
+1.  Download the `demo/Objects-Demo-Vault` folder from this repository.
+2.  Open Obsidian and select **"Open folder as vault"**.
+3.  Choose the downloaded `Objects-Demo-Vault` folder.
+4.  Open the `Welcome.md` file inside the vault for a quick guided tour.
+
+The demo vault is pre-configured with sample templates, folders, and triggers to show you the power of object-oriented note-taking.
 
 ---
 

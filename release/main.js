@@ -79,7 +79,7 @@ var SettingsTab = class extends import_obsidian2.PluginSettingTab {
    */
   renderStatus(containerEl) {
     const isTemplaterActive = !!this.plugin.templater.getApi();
-    new import_obsidian2.Setting(containerEl).setName("Integration status").setDesc(isTemplaterActive ? "Templater integration is active." : "Templater plugin was not detected.").then((s) => {
+    new import_obsidian2.Setting(containerEl).setName("Integration status").setDesc(isTemplaterActive ? 'Templater integration is active. Note: Ensure "Trigger Templater on new file creation" is enabled in Templater settings for full syntax support.' : "Templater plugin was not detected.").then((s) => {
       const status = s.controlEl.createSpan({
         cls: "objects-status-indicator",
         text: isTemplaterActive ? "\u2714 Active" : "\u2718 Missing"
