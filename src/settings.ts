@@ -129,15 +129,17 @@ export class SettingsTab extends PluginSettingTab {
                     mapping.enabled = v;
                     await this.plugin.saveSettings();
                 }))
-            .addText(t => t
-                .setPlaceholder('@trigger')
-                .setValue(mapping.trigger)
-                .onChange(v => {
-                    // Ensure triggers always start with @
-                    mapping.trigger = v.startsWith('@') ? v : (v ? '@' + v : '@');
-                    t.setValue(mapping.trigger);
-                    this.debouncedSave();
-                }))
+            .addText(t => { t
+                    .setPlaceholder('@trigger')
+                    .setValue(mapping.trigger)
+                    .onChange(v => {
+                        mapping.trigger = v.startsWith('@') ? v : (v ? '@' + v : '@');
+                        t.setValue(mapping.trigger);
+                        this.debouncedSave();
+                    });
+                t.inputEl.style.flex = '1';
+                t.inputEl.style.width = '100%';
+            })
             .addText(t => {
                 new TemplateSuggest(this.app, t.inputEl, this.plugin);
                 t.setPlaceholder('Template')
@@ -146,14 +148,19 @@ export class SettingsTab extends PluginSettingTab {
                         mapping.templateName = v.replace(/\.md$/, '');
                         this.debouncedSave();
                     });
+                t.inputEl.style.flex = '1';
+                t.inputEl.style.width = '100%';
             })
-            .addText(t => t
-                .setPlaceholder('Target folder')
-                .setValue(mapping.outputPath || '')
-                .onChange(v => {
-                    mapping.outputPath = sanitizeFolderPath(v);
-                    this.debouncedSave();
-                }))
+            .addText(t => {
+                t.setPlaceholder('Target folder')
+                    .setValue(mapping.outputPath || '')
+                    .onChange(v => {
+                        mapping.outputPath = sanitizeFolderPath(v);
+                        this.debouncedSave();
+                    });
+                t.inputEl.style.flex = '1';
+                t.inputEl.style.width = '100%';
+            })
             .addExtraButton(b => b
                 .setIcon('trash')
                 .setTooltip('Delete mapping')
@@ -164,6 +171,10 @@ export class SettingsTab extends PluginSettingTab {
                 }));
 
         s.infoEl.remove();
+        s.controlEl.style.display = 'flex';
+        s.controlEl.style.flex = '1';
+        s.controlEl.style.width = '100%';
+        s.controlEl.style.gap = '10px';
         s.controlEl.addClass('objects-mapping-control');
     }
 

@@ -132,25 +132,39 @@ var SettingsTab = class extends import_obsidian2.PluginSettingTab {
     const s = new import_obsidian2.Setting(containerEl).addToggle((t) => t.setValue(mapping.enabled).onChange(async (v) => {
       mapping.enabled = v;
       await this.plugin.saveSettings();
-    })).addText((t) => t.setPlaceholder("@trigger").setValue(mapping.trigger).onChange((v) => {
-      mapping.trigger = v.startsWith("@") ? v : v ? "@" + v : "@";
-      t.setValue(mapping.trigger);
-      this.debouncedSave();
     })).addText((t) => {
+      t.setPlaceholder("@trigger").setValue(mapping.trigger).onChange((v) => {
+        mapping.trigger = v.startsWith("@") ? v : v ? "@" + v : "@";
+        t.setValue(mapping.trigger);
+        this.debouncedSave();
+      });
+      t.inputEl.style.flex = "1";
+      t.inputEl.style.width = "100%";
+    }).addText((t) => {
       new TemplateSuggest(this.app, t.inputEl, this.plugin);
       t.setPlaceholder("Template").setValue(mapping.templateName).onChange((v) => {
         mapping.templateName = v.replace(/\.md$/, "");
         this.debouncedSave();
       });
-    }).addText((t) => t.setPlaceholder("Target folder").setValue(mapping.outputPath || "").onChange((v) => {
-      mapping.outputPath = sanitizeFolderPath(v);
-      this.debouncedSave();
-    })).addExtraButton((b) => b.setIcon("trash").setTooltip("Delete mapping").onClick(async () => {
+      t.inputEl.style.flex = "1";
+      t.inputEl.style.width = "100%";
+    }).addText((t) => {
+      t.setPlaceholder("Target folder").setValue(mapping.outputPath || "").onChange((v) => {
+        mapping.outputPath = sanitizeFolderPath(v);
+        this.debouncedSave();
+      });
+      t.inputEl.style.flex = "1";
+      t.inputEl.style.width = "100%";
+    }).addExtraButton((b) => b.setIcon("trash").setTooltip("Delete mapping").onClick(async () => {
       this.plugin.settings.triggerTemplates.splice(index, 1);
       await this.plugin.saveSettings();
       this.display();
     }));
     s.infoEl.remove();
+    s.controlEl.style.display = "flex";
+    s.controlEl.style.flex = "1";
+    s.controlEl.style.width = "100%";
+    s.controlEl.style.gap = "10px";
     s.controlEl.addClass("objects-mapping-control");
   }
   renderFooter(containerEl) {
