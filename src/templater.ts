@@ -2,6 +2,10 @@ import { App, TFile, normalizePath, moment } from 'obsidian';
 import { ITemplaterAPI, ITemplaterPlugin } from './types';
 import { sanitizeFolderPath } from './utils';
 
+/**
+ * Handles note creation.
+ * Uses primarily the Templater API, but provides a fallback system if Templater is not active.
+ */
 export class TemplaterHandler {
     private app: App;
 
@@ -11,6 +15,7 @@ export class TemplaterHandler {
 
     /**
      * Tries to get the Templater API if the plugin is enabled.
+     * @returns The Templater API or null if the plugin is not active.
      */
     getApi(): ITemplaterAPI | null {
         const plugins = (this.app as any).plugins;
@@ -23,13 +28,13 @@ export class TemplaterHandler {
 
     /**
      * Creates a new note from a template.
-     * Uses Templater if available, otherwise falls back to a basic replacement engine.
      */
     async createNoteFromTemplate(templateFile: TFile | null, folderPath: string, fileName: string): Promise<TFile | null> {
         const api = this.getApi();
         const sanitizedFolder = sanitizeFolderPath(folderPath);
         const newNotePath = normalizePath(sanitizedFolder ? `${sanitizedFolder}/${fileName}.md` : `${fileName}.md`);
 
+        // Preferred method: Templater API
         if (api && templateFile) {
             return await api.create_new_note_from_template(templateFile, sanitizedFolder, fileName, false);
         }
@@ -44,14 +49,14 @@ export class TemplaterHandler {
         try {
             return await this.app.vault.create(newNotePath, content);
         } catch (error) {
-            // Only log errors, as per guidelines
             console.error(`Objects: Failed to create file at "${newNotePath}":`, error);
             return null;
         }
     }
 
     /**
-     * Basic placeholder replacement for {{title}}, {{date}}, {{time}}
+     * Basic placeholder replacement for the fallback system.
+     * Supports {{title}}, {{date}} (YYYY-MM-DD), and {{time}} (HH:mm).
      */
     private replacePlaceholders(content: string, title: string): string {
         const now = moment();
