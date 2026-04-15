@@ -97,13 +97,20 @@ export class TriggerSuggest extends EditorSuggest<TriggerTemplateMapping> {
             return;
         }
 // 2. File doesn't exist - Proceed with creation
-const templatePath = normalizePath(`${this.plugin.settings.templateFolder}/${suggestion.templateName}.md`);
-const templateFile = this.app.vault.getAbstractFileByPath(templatePath);
-const templaterApi = this.plugin.templater.getApi();
+let templateFile: TFile | null = null;
+const templateName = suggestion.templateName?.trim();
 
-if (templaterApi && !(templateFile instanceof TFile)) {
-    new Notice(`Template "${templatePath}" not found.`, 4000);
-    return;
+if (templateName) {
+    const templateFolder = this.plugin.settings.templateFolder?.trim();
+    const templatePath = normalizePath(templateFolder ? `${templateFolder}/${templateName}.md` : `${templateName}.md`);
+    const abstractTemplate = this.app.vault.getAbstractFileByPath(templatePath);
+    
+    if (abstractTemplate instanceof TFile) {
+        templateFile = abstractTemplate;
+    } else {
+        new Notice(`Template file not found at: ${templatePath}`, 5000);
+        return;
+    }
 }
 
 try {
@@ -114,7 +121,7 @@ try {
 
     // 3. Create note using either Templater or fallback
     const newFile = await this.plugin.templater.createNoteFromTemplate(
-        templateFile instanceof TFile ? templateFile : null, 
+        templateFile, 
         finalFolderPath, 
         sanitizedTitle
     );

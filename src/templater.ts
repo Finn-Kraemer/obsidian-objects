@@ -36,13 +36,14 @@ export class TemplaterHandler {
         if (api && templateFile) {
             return await api.create_new_note_from_template(templateFile, folderPath, fileName, false);
         } else {
-            // Basic fallback or Templater disabled: Use internal placeholder logic
-            console.log("Obsidian Objects: Using internal placeholder logic.");
-            
+            // Basic fallback or Templater disabled / No template provided
             let content = "";
             if (templateFile instanceof TFile) {
+                console.log("Obsidian Objects: Using internal placeholder logic.");
                 content = await this.app.vault.read(templateFile);
                 content = this.replacePlaceholders(content, fileName);
+            } else {
+                console.log("Obsidian Objects: No template provided, creating empty note.");
             }
 
             return await this.app.vault.create(newNotePath, content);

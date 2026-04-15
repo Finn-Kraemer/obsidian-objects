@@ -164,11 +164,13 @@ var TemplaterHandler = class {
     if (api && templateFile) {
       return await api.create_new_note_from_template(templateFile, folderPath, fileName, false);
     } else {
-      console.log("Obsidian Objects: Using internal placeholder logic.");
       let content = "";
       if (templateFile instanceof import_obsidian2.TFile) {
+        console.log("Obsidian Objects: Using internal placeholder logic.");
         content = await this.app.vault.read(templateFile);
         content = this.replacePlaceholders(content, fileName);
+      } else {
+        console.log("Obsidian Objects: No template provided, creating empty note.");
       }
       return await this.app.vault.create(newNotePath, content);
     }
@@ -306,7 +308,7 @@ var TriggerSuggest = class extends import_obsidian4.EditorSuggest {
     }).open();
   }
   async createNote(suggestion, title, context, editor) {
-    var _a;
+    var _a, _b, _c;
     const sanitizedTitle = title.replace(/[\\/:"*?<>|]/g, "_");
     const folder = (_a = suggestion.outputPath) != null ? _a : this.plugin.settings.defaultOutputPath;
     const finalFolderPath = folder ? (0, import_obsidian4.normalizePath)(folder) : "";
@@ -326,19 +328,25 @@ var TriggerSuggest = class extends import_obsidian4.EditorSuggest {
       new import_obsidian4.Notice(`Linked to existing note: "${existingFile.basename}"`);
       return;
     }
-    const templatePath = (0, import_obsidian4.normalizePath)(`${this.plugin.settings.templateFolder}/${suggestion.templateName}.md`);
-    const templateFile = this.app.vault.getAbstractFileByPath(templatePath);
-    const templaterApi = this.plugin.templater.getApi();
-    if (templaterApi && !(templateFile instanceof import_obsidian4.TFile)) {
-      new import_obsidian4.Notice(`Template "${templatePath}" not found.`, 4e3);
-      return;
+    let templateFile = null;
+    const templateName = (_b = suggestion.templateName) == null ? void 0 : _b.trim();
+    if (templateName) {
+      const templateFolder = (_c = this.plugin.settings.templateFolder) == null ? void 0 : _c.trim();
+      const templatePath = (0, import_obsidian4.normalizePath)(templateFolder ? `${templateFolder}/${templateName}.md` : `${templateName}.md`);
+      const abstractTemplate = this.app.vault.getAbstractFileByPath(templatePath);
+      if (abstractTemplate instanceof import_obsidian4.TFile) {
+        templateFile = abstractTemplate;
+      } else {
+        new import_obsidian4.Notice(`Template file not found at: ${templatePath}`, 5e3);
+        return;
+      }
     }
     try {
       if (finalFolderPath && !this.app.vault.getAbstractFileByPath(finalFolderPath)) {
         await this.app.vault.createFolder(finalFolderPath);
       }
       const newFile = await this.plugin.templater.createNoteFromTemplate(
-        templateFile instanceof import_obsidian4.TFile ? templateFile : null,
+        templateFile,
         finalFolderPath,
         sanitizedTitle
       );
