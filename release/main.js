@@ -27,10 +27,9 @@ __export(main_exports, {
   default: () => ObsidianObjectsPlugin
 });
 module.exports = __toCommonJS(main_exports);
-var import_obsidian5 = require("obsidian");
+var import_obsidian6 = require("obsidian");
 
-// src/settings.ts
-var import_obsidian = require("obsidian");
+// src/types.ts
 var DEFAULT_SETTINGS = {
   templateFolder: "Templates",
   triggerTemplates: [
@@ -40,72 +39,97 @@ var DEFAULT_SETTINGS = {
   ],
   defaultOutputPath: ""
 };
-var SettingsTab = class extends import_obsidian.PluginSettingTab {
+
+// src/settings.ts
+var import_obsidian2 = require("obsidian");
+
+// src/utils.ts
+var import_obsidian = require("obsidian");
+function sanitizeFolderPath(path) {
+  if (!path || path.trim() === "")
+    return "";
+  let sanitized = (0, import_obsidian.normalizePath)(path.trim());
+  sanitized = sanitized.replace(/^\/+|\/+$/g, "");
+  return sanitized;
+}
+function sanitizeFileName(name) {
+  return name.replace(/[\\/:"*?<>|]/g, "_").trim();
+}
+
+// src/settings.ts
+var SettingsTab = class extends import_obsidian2.PluginSettingTab {
   constructor(app, plugin) {
     super(app, plugin);
     this.plugin = plugin;
-    this.debouncedSave = (0, import_obsidian.debounce)(() => this.plugin.saveSettings(), 500, true);
+    this.debouncedSave = (0, import_obsidian2.debounce)(() => this.plugin.saveSettings(), 500, true);
   }
   display() {
     const { containerEl } = this;
     containerEl.empty();
     containerEl.createEl("h2", { text: "Obsidian Objects Settings" });
+    this.renderStatus(containerEl);
+    this.renderGeneralConfig(containerEl);
+    this.renderTriggerMappings(containerEl);
+    this.renderFooter(containerEl);
+  }
+  renderStatus(containerEl) {
     const isTemplaterActive = !!this.plugin.templater.getApi();
-    new import_obsidian.Setting(containerEl).setName("Integrations Status").setDesc(isTemplaterActive ? "Templater integration is active." : "WARNING: Templater plugin is not detected.").then((s) => {
+    new import_obsidian2.Setting(containerEl).setName("Integrations Status").setDesc(isTemplaterActive ? "Templater integration is active." : "WARNING: Templater plugin is not detected.").then((s) => {
       const status = s.controlEl.createSpan({
         text: isTemplaterActive ? "\u2714 Active" : "\u2718 Missing"
       });
       status.style.fontWeight = "bold";
       status.style.color = isTemplaterActive ? "var(--text-success)" : "var(--text-error)";
     });
+  }
+  renderGeneralConfig(containerEl) {
     containerEl.createEl("h3", { text: "General Configuration" });
-    new import_obsidian.Setting(containerEl).setName("Template Folder").setDesc("Root directory for your markdown templates.").addText((text) => text.setPlaceholder("Templates").setValue(this.plugin.settings.templateFolder).onChange((v) => {
-      this.plugin.settings.templateFolder = v;
+    new import_obsidian2.Setting(containerEl).setName("Template Folder").setDesc("Root directory for your markdown templates.").addText((text) => text.setPlaceholder("Templates").setValue(this.plugin.settings.templateFolder).onChange((v) => {
+      this.plugin.settings.templateFolder = sanitizeFolderPath(v);
       this.debouncedSave();
     }));
-    new import_obsidian.Setting(containerEl).setName("Default Output Path").setDesc("Fallback folder for newly created notes.").addText((text) => text.setPlaceholder("Inbox/").setValue(this.plugin.settings.defaultOutputPath).onChange((v) => {
-      this.plugin.settings.defaultOutputPath = v;
+    new import_obsidian2.Setting(containerEl).setName("Default Output Path").setDesc("Fallback folder for newly created notes.").addText((text) => text.setPlaceholder("Inbox").setValue(this.plugin.settings.defaultOutputPath).onChange((v) => {
+      this.plugin.settings.defaultOutputPath = sanitizeFolderPath(v);
       this.debouncedSave();
     }));
+  }
+  renderTriggerMappings(containerEl) {
     containerEl.createEl("h3", { text: "Trigger Mappings" });
     this.plugin.settings.triggerTemplates.forEach((mapping, index) => {
-      const s = new import_obsidian.Setting(containerEl).addToggle((t) => t.setValue(mapping.enabled).onChange(async (v) => {
-        mapping.enabled = v;
-        await this.plugin.saveSettings();
-      })).addText((t) => t.setPlaceholder("@trigger").setValue(mapping.trigger).onChange((v) => {
-        mapping.trigger = v.startsWith("@") ? v : v ? "@" + v : "@";
-        t.setValue(mapping.trigger);
-        this.debouncedSave();
-      })).addText((t) => {
-        new TemplateSuggest(this.app, t.inputEl, this.plugin);
-        t.setPlaceholder("Template").setValue(mapping.templateName).onChange((v) => {
-          mapping.templateName = v.replace(/\.md$/, "");
-          this.debouncedSave();
-        });
-      }).addText((t) => t.setPlaceholder("Target Folder").setValue(mapping.outputPath || "").onChange((v) => {
-        mapping.outputPath = v;
-        this.debouncedSave();
-      })).addExtraButton((b) => b.setIcon("trash").setTooltip("Delete Mapping").onClick(async () => {
-        this.plugin.settings.triggerTemplates.splice(index, 1);
-        await this.plugin.saveSettings();
-        this.display();
-      }));
-      s.infoEl.remove();
-      s.settingEl.style.borderTop = "none";
-      s.controlEl.style.width = "100%";
-      s.controlEl.style.display = "flex";
-      s.controlEl.style.gap = "10px";
-      s.controlEl.style.justifyContent = "space-between";
-      s.controlEl.querySelectorAll('input[type="text"]').forEach((el) => {
-        el.style.flex = "1 1 0";
-        el.style.minWidth = "80px";
-      });
+      this.renderMappingRow(containerEl, mapping, index);
     });
-    new import_obsidian.Setting(containerEl).addButton((btn) => btn.setButtonText("Add New Mapping").setCta().onClick(async () => {
+    new import_obsidian2.Setting(containerEl).addButton((btn) => btn.setButtonText("Add New Mapping").setCta().onClick(async () => {
       this.plugin.settings.triggerTemplates.push({ trigger: "@", templateName: "", enabled: true });
       await this.plugin.saveSettings();
       this.display();
     }));
+  }
+  renderMappingRow(containerEl, mapping, index) {
+    const s = new import_obsidian2.Setting(containerEl).addToggle((t) => t.setValue(mapping.enabled).onChange(async (v) => {
+      mapping.enabled = v;
+      await this.plugin.saveSettings();
+    })).addText((t) => t.setPlaceholder("@trigger").setValue(mapping.trigger).onChange((v) => {
+      mapping.trigger = v.startsWith("@") ? v : v ? "@" + v : "@";
+      t.setValue(mapping.trigger);
+      this.debouncedSave();
+    })).addText((t) => {
+      new TemplateSuggest(this.app, t.inputEl, this.plugin);
+      t.setPlaceholder("Template").setValue(mapping.templateName).onChange((v) => {
+        mapping.templateName = v.replace(/\.md$/, "");
+        this.debouncedSave();
+      });
+    }).addText((t) => t.setPlaceholder("Target Folder").setValue(mapping.outputPath || "").onChange((v) => {
+      mapping.outputPath = sanitizeFolderPath(v);
+      this.debouncedSave();
+    })).addExtraButton((b) => b.setIcon("trash").setTooltip("Delete Mapping").onClick(async () => {
+      this.plugin.settings.triggerTemplates.splice(index, 1);
+      await this.plugin.saveSettings();
+      this.display();
+    }));
+    s.infoEl.remove();
+    s.controlEl.addClass("objects-mapping-control");
+  }
+  renderFooter(containerEl) {
     const footer = containerEl.createDiv();
     footer.style.marginTop = "4rem";
     footer.style.textAlign = "center";
@@ -114,42 +138,47 @@ var SettingsTab = class extends import_obsidian.PluginSettingTab {
     footer.textContent = "Settings are saved automatically. Triggers must start with @.";
   }
 };
-var TemplateSuggest = class extends import_obsidian.AbstractInputSuggest {
+var TemplateSuggest = class extends import_obsidian2.AbstractInputSuggest {
   constructor(app, inputEl, plugin) {
     super(app, inputEl);
     this.inputEl = inputEl;
     this.plugin = plugin;
   }
   getSuggestions(query) {
-    const root = this.plugin.settings.templateFolder;
+    const root = sanitizeFolderPath(this.plugin.settings.templateFolder);
     if (!root)
       return [];
     const lower = query.toLowerCase();
     return this.app.vault.getMarkdownFiles().filter(
-      (f) => f.path.startsWith(root + "/") && f.path.toLowerCase().includes(lower)
+      (f) => {
+        var _a;
+        return (f.path.startsWith(root + "/") || ((_a = f.parent) == null ? void 0 : _a.path) === root) && f.path.toLowerCase().includes(lower);
+      }
     );
   }
   renderSuggestion(file, el) {
-    const root = this.plugin.settings.templateFolder;
+    const root = sanitizeFolderPath(this.plugin.settings.templateFolder);
     const rel = file.path.startsWith(root + "/") ? file.path.substring(root.length + 1) : file.path;
     el.setText(rel.replace(/\.md$/, ""));
   }
   selectSuggestion(file) {
-    const root = this.plugin.settings.templateFolder;
+    const root = sanitizeFolderPath(this.plugin.settings.templateFolder);
     const rel = file.path.startsWith(root + "/") ? file.path.substring(root.length + 1) : file.path;
     this.inputEl.value = rel.replace(/\.md$/, "");
     this.inputEl.dispatchEvent(new Event("input"));
-    this.inputEl.dispatchEvent(new Event("change"));
     this.close();
   }
 };
 
 // src/templater.ts
-var import_obsidian2 = require("obsidian");
+var import_obsidian3 = require("obsidian");
 var TemplaterHandler = class {
   constructor(app) {
     this.app = app;
   }
+  /**
+   * Tries to get the Templater API if the plugin is enabled.
+   */
   getApi() {
     const plugins = this.app.plugins;
     if (!plugins || !plugins.enabledPlugins.has("templater-obsidian")) {
@@ -158,37 +187,53 @@ var TemplaterHandler = class {
     const plugin = plugins.plugins["templater-obsidian"];
     return (plugin == null ? void 0 : plugin.templater) || null;
   }
+  /**
+   * Creates a new note from a template.
+   * Uses Templater if available, otherwise falls back to a basic replacement engine.
+   */
   async createNoteFromTemplate(templateFile, folderPath, fileName) {
     const api = this.getApi();
-    const newNotePath = (0, import_obsidian2.normalizePath)(folderPath ? `${folderPath}/${fileName}.md` : `${fileName}.md`);
+    const sanitizedFolder = sanitizeFolderPath(folderPath);
+    const newNotePath = (0, import_obsidian3.normalizePath)(sanitizedFolder ? `${sanitizedFolder}/${fileName}.md` : `${fileName}.md`);
     if (api && templateFile) {
-      return await api.create_new_note_from_template(templateFile, folderPath, fileName, false);
-    } else {
-      let content = "";
-      if (templateFile instanceof import_obsidian2.TFile) {
-        console.log("Obsidian Objects: Using internal placeholder logic.");
-        content = await this.app.vault.read(templateFile);
-        content = this.replacePlaceholders(content, fileName);
-      } else {
-        console.log("Obsidian Objects: No template provided, creating empty note.");
-      }
+      return await api.create_new_note_from_template(templateFile, sanitizedFolder, fileName, false);
+    }
+    let content = "";
+    if (templateFile) {
+      content = await this.app.vault.read(templateFile);
+      content = this.replacePlaceholders(content, fileName);
+    }
+    try {
       return await this.app.vault.create(newNotePath, content);
+    } catch (error) {
+      console.error(`Obsidian Objects: Failed to create file at "${newNotePath}":`, error);
+      return null;
     }
   }
+  /**
+   * Basic placeholder replacement for {{title}}, {{date}}, {{time}}
+   */
   replacePlaceholders(content, title) {
     const now = window.moment();
-    const date = now.format("YYYY-MM-DD");
-    const time = now.format("HH:mm");
-    return content.replace(/\{\{title\}\}/g, title).replace(/\{\{date\}\}/g, date).replace(/\{\{time\}\}/g, time);
+    const replacements = {
+      "{{title}}": title,
+      "{{date}}": now.format("YYYY-MM-DD"),
+      "{{time}}": now.format("HH:mm")
+    };
+    let result = content;
+    for (const [placeholder, value] of Object.entries(replacements)) {
+      result = result.split(placeholder).join(value);
+    }
+    return result;
   }
 };
 
 // src/suggester.ts
-var import_obsidian4 = require("obsidian");
+var import_obsidian5 = require("obsidian");
 
 // src/modal.ts
-var import_obsidian3 = require("obsidian");
-var TitleModal = class extends import_obsidian3.Modal {
+var import_obsidian4 = require("obsidian");
+var TitleModal = class extends import_obsidian4.Modal {
   constructor(app, plugin, targetFolder, onSubmit) {
     super(app);
     this.result = "";
@@ -199,58 +244,50 @@ var TitleModal = class extends import_obsidian3.Modal {
   onOpen() {
     const { contentEl } = this;
     contentEl.createEl("h2", { text: "Enter Note Title" });
-    const setting = new import_obsidian3.Setting(contentEl).setName("Title").addText((text) => {
+    const setting = new import_obsidian4.Setting(contentEl).setName("Title").addText((text) => {
       text.setPlaceholder("My new note").setValue(this.result).onChange((value) => {
         this.result = value;
       });
       new FileSuggest(this.app, text.inputEl, this.plugin, this.targetFolder);
       text.inputEl.addEventListener("keydown", (e) => {
         if (e.key === "Enter") {
-          if (e.key === "Enter") {
-            setTimeout(() => {
-              if (this.app.workspace.activeLeaf) {
-                this.submit();
-              }
-            }, 100);
-          }
+          setTimeout(() => this.submit(), 100);
         }
       });
-      setTimeout(() => text.inputEl.focus(), 0);
+      text.inputEl.focus();
     });
-    new import_obsidian3.Setting(contentEl).addButton(
-      (btn) => btn.setButtonText("Create / Link").setCta().onClick(() => {
-        this.submit();
-      })
+    new import_obsidian4.Setting(contentEl).addButton(
+      (btn) => btn.setButtonText("Create / Link").setCta().onClick(() => this.submit())
     ).addButton(
-      (btn) => btn.setButtonText("Cancel").onClick(() => {
-        this.close();
-      })
+      (btn) => btn.setButtonText("Cancel").onClick(() => this.close())
     );
   }
   submit() {
-    if (this.result && this.result.trim().length > 0) {
-      this.onSubmit(this.result.trim());
+    if (!this.app.workspace.activeLeaf)
+      return;
+    const trimmed = this.result.trim();
+    if (trimmed.length > 0) {
+      this.onSubmit(trimmed);
       this.close();
     }
   }
   onClose() {
-    const { contentEl } = this;
-    contentEl.empty();
+    this.contentEl.empty();
   }
 };
-var FileSuggest = class extends import_obsidian3.AbstractInputSuggest {
+var FileSuggest = class extends import_obsidian4.AbstractInputSuggest {
   constructor(app, inputEl, plugin, targetFolder) {
     super(app, inputEl);
+    this.inputEl = inputEl;
     this.plugin = plugin;
     this.targetFolder = targetFolder;
-    this.inputEl = inputEl;
   }
   getSuggestions(query) {
     const lowerCaseQuery = query.toLowerCase();
     const files = this.app.vault.getMarkdownFiles();
-    const normalizedTarget = this.targetFolder ? this.targetFolder.replace(/\/$/, "") : "";
+    const normalizedTarget = sanitizeFolderPath(this.targetFolder);
     return files.filter((file) => {
-      const folderPath = file.parent ? file.parent.path : "";
+      const folderPath = file.parent ? sanitizeFolderPath(file.parent.path) : "";
       const isInFolder = normalizedTarget === "" || folderPath === normalizedTarget;
       const matchesQuery = file.basename.toLowerCase().includes(lowerCaseQuery);
       return isInFolder && matchesQuery;
@@ -261,13 +298,13 @@ var FileSuggest = class extends import_obsidian3.AbstractInputSuggest {
   }
   selectSuggestion(file) {
     this.inputEl.value = file.basename;
-    this.inputEl.trigger("input");
+    this.inputEl.dispatchEvent(new Event("input"));
     this.close();
   }
 };
 
 // src/suggester.ts
-var TriggerSuggest = class extends import_obsidian4.EditorSuggest {
+var TriggerSuggest = class extends import_obsidian5.EditorSuggest {
   constructor(app, plugin) {
     super(app);
     this.plugin = plugin;
@@ -275,16 +312,15 @@ var TriggerSuggest = class extends import_obsidian4.EditorSuggest {
   onTrigger(cursor, editor) {
     const line = editor.getLine(cursor.line).substring(0, cursor.ch);
     const match = line.match(/(?:^|\s)@(\w*)$/);
-    if (match) {
-      const query = match[1];
-      const triggerStart = line.length - (query.length + 1);
-      return {
-        start: { line: cursor.line, ch: triggerStart },
-        end: cursor,
-        query
-      };
-    }
-    return null;
+    if (!match)
+      return null;
+    const query = match[1];
+    const triggerStart = cursor.ch - (query.length + 1);
+    return {
+      start: { line: cursor.line, ch: triggerStart },
+      end: cursor,
+      query
+    };
   }
   getSuggestions(context) {
     const query = context.query.toLowerCase();
@@ -296,83 +332,82 @@ var TriggerSuggest = class extends import_obsidian4.EditorSuggest {
     el.setText(suggestion.trigger);
   }
   async selectSuggestion(suggestion, evt) {
-    var _a;
     const context = this.context;
     if (!context)
       return;
-    const editor = context.editor;
-    const folder = (_a = suggestion.outputPath) != null ? _a : this.plugin.settings.defaultOutputPath;
-    const finalFolderPath = folder ? (0, import_obsidian4.normalizePath)(folder) : "";
-    new TitleModal(this.app, this.plugin, finalFolderPath, async (title) => {
-      await this.createNote(suggestion, title, context, editor);
+    const folder = suggestion.outputPath || this.plugin.settings.defaultOutputPath;
+    const targetFolder = sanitizeFolderPath(folder);
+    new TitleModal(this.app, this.plugin, targetFolder, async (title) => {
+      await this.handleNoteCreation(suggestion, title, context);
     }).open();
   }
-  async createNote(suggestion, title, context, editor) {
-    var _a, _b, _c;
-    const sanitizedTitle = title.replace(/[\\/:"*?<>|]/g, "_");
-    const folder = (_a = suggestion.outputPath) != null ? _a : this.plugin.settings.defaultOutputPath;
-    const finalFolderPath = folder ? (0, import_obsidian4.normalizePath)(folder) : "";
-    const newNotePath = (0, import_obsidian4.normalizePath)(finalFolderPath ? `${finalFolderPath}/${sanitizedTitle}.md` : `${sanitizedTitle}.md`);
+  /**
+   * Handles the full logic of creating a note or linking to an existing one.
+   */
+  async handleNoteCreation(suggestion, title, context) {
+    var _a;
+    const editor = context.editor;
+    const sanitizedTitle = sanitizeFileName(title);
+    const folder = suggestion.outputPath || this.plugin.settings.defaultOutputPath;
+    const targetFolder = sanitizeFolderPath(folder);
+    const newNotePath = (0, import_obsidian5.normalizePath)(targetFolder ? `${targetFolder}/${sanitizedTitle}.md` : `${sanitizedTitle}.md`);
     const existingFile = this.app.vault.getAbstractFileByPath(newNotePath);
-    const activeFile = this.app.workspace.getActiveFile();
-    const sourcePath = activeFile ? activeFile.path : "";
-    if (existingFile instanceof import_obsidian4.TFile) {
-      let link = this.app.fileManager.generateMarkdownLink(existingFile, sourcePath, "", title);
-      link = link.trim();
-      editor.focus();
-      editor.replaceRange(link, context.start, context.end);
-      editor.setCursor({
-        line: context.start.line,
-        ch: context.start.ch + link.length
-      });
-      new import_obsidian4.Notice(`Linked to existing note: "${existingFile.basename}"`);
+    const sourcePath = ((_a = this.app.workspace.getActiveFile()) == null ? void 0 : _a.path) || "";
+    if (existingFile instanceof import_obsidian5.TFile) {
+      this.insertLinkAndFocus(editor, existingFile, sourcePath, title, context);
+      new import_obsidian5.Notice(`Linked to existing note: "${existingFile.basename}"`);
       return;
     }
-    let templateFile = null;
-    const templateName = (_b = suggestion.templateName) == null ? void 0 : _b.trim();
-    if (templateName) {
-      const templateFolder = (_c = this.plugin.settings.templateFolder) == null ? void 0 : _c.trim();
-      const templatePath = (0, import_obsidian4.normalizePath)(templateFolder ? `${templateFolder}/${templateName}.md` : `${templateName}.md`);
-      const abstractTemplate = this.app.vault.getAbstractFileByPath(templatePath);
-      if (abstractTemplate instanceof import_obsidian4.TFile) {
-        templateFile = abstractTemplate;
-      } else {
-        new import_obsidian4.Notice(`Template file not found at: ${templatePath}`, 5e3);
-        return;
-      }
+    const templateFile = await this.getTemplateFile(suggestion);
+    if (!templateFile && suggestion.templateName) {
+      new import_obsidian5.Notice(`Template "${suggestion.templateName}" not found.`, 5e3);
+      return;
     }
     try {
-      if (finalFolderPath && !this.app.vault.getAbstractFileByPath(finalFolderPath)) {
-        await this.app.vault.createFolder(finalFolderPath);
+      if (targetFolder && !this.app.vault.getAbstractFileByPath(targetFolder)) {
+        await this.app.vault.createFolder(targetFolder);
       }
       const newFile = await this.plugin.templater.createNoteFromTemplate(
         templateFile,
-        finalFolderPath,
+        targetFolder,
         sanitizedTitle
       );
       if (newFile) {
-        let link = this.app.fileManager.generateMarkdownLink(newFile, sourcePath, "", title);
-        link = link.trim();
-        editor.focus();
-        editor.replaceRange(link, context.start, context.end);
-        editor.setCursor({
-          line: context.start.line,
-          ch: context.start.ch + link.length
-        });
+        this.insertLinkAndFocus(editor, newFile, sourcePath, title, context);
         this.app.workspace.openLinkText(newFile.path, "", true);
-        new import_obsidian4.Notice(`Created new note: "${newFile.basename}"`);
+        new import_obsidian5.Notice(`Created new note: "${newFile.basename}"`);
       } else {
-        new import_obsidian4.Notice("Error: Failed to create the file.", 5e3);
+        new import_obsidian5.Notice("Error: Failed to create the file.", 5e3);
       }
     } catch (e) {
-      console.error("Obsidian Objects: Error in creation flow:", e);
-      new import_obsidian4.Notice("Error creating note. See console for details.");
+      console.error("Obsidian Objects: Error during creation flow:", e);
+      new import_obsidian5.Notice("Error creating note. See console for details.");
     }
+  }
+  async getTemplateFile(suggestion) {
+    var _a;
+    const templateName = (_a = suggestion.templateName) == null ? void 0 : _a.trim();
+    if (!templateName)
+      return null;
+    const templateFolder = sanitizeFolderPath(this.plugin.settings.templateFolder);
+    const templatePath = (0, import_obsidian5.normalizePath)(templateFolder ? `${templateFolder}/${templateName}.md` : `${templateName}.md`);
+    const file = this.app.vault.getAbstractFileByPath(templatePath);
+    return file instanceof import_obsidian5.TFile ? file : null;
+  }
+  insertLinkAndFocus(editor, file, sourcePath, alias, context) {
+    let link = this.app.fileManager.generateMarkdownLink(file, sourcePath, "", alias).trim();
+    editor.replaceRange(link, context.start, context.end);
+    const newCursorPos = {
+      line: context.start.line,
+      ch: context.start.ch + link.length
+    };
+    editor.setCursor(newCursorPos);
+    editor.focus();
   }
 };
 
 // src/main.ts
-var ObsidianObjectsPlugin = class extends import_obsidian5.Plugin {
+var ObsidianObjectsPlugin = class extends import_obsidian6.Plugin {
   async onload() {
     console.log("Obsidian Objects: Loading...");
     await this.loadSettings();
@@ -380,14 +415,18 @@ var ObsidianObjectsPlugin = class extends import_obsidian5.Plugin {
     this.addSettingTab(new SettingsTab(this.app, this));
     this.registerEditorSuggest(new TriggerSuggest(this.app, this));
     this.app.workspace.onLayoutReady(() => {
-      if (!this.templater.getApi()) {
-        const message = 'Obsidian Objects: The "Templater" plugin is not active. Please install and enable it.';
-        new import_obsidian5.Notice(message, 1e4);
-        console.warn(message);
-      } else {
-        console.log("Obsidian Objects: Templater plugin found and ready.");
-      }
+      this.verifyIntegrations();
     });
+  }
+  verifyIntegrations() {
+    const api = this.templater.getApi();
+    if (!api) {
+      const message = 'Obsidian Objects: The "Templater" plugin is not active. Please install and enable it for full functionality.';
+      new import_obsidian6.Notice(message, 7e3);
+      console.warn(message);
+    } else {
+      console.log("Obsidian Objects: Templater plugin found and ready.");
+    }
   }
   async loadSettings() {
     this.settings = Object.assign({}, DEFAULT_SETTINGS, await this.loadData());

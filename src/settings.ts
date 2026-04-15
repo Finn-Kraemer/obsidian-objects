@@ -1,28 +1,7 @@
-import { App, PluginSettingTab, Setting, TFile, AbstractInputSuggest, debounce, setIcon } from 'obsidian';
+import { App, PluginSettingTab, Setting, TFile, AbstractInputSuggest, debounce } from 'obsidian';
 import ObsidianObjectsPlugin from './main';
-
-export interface TriggerTemplateMapping {
-    trigger: string;
-    templateName: string;
-    outputPath?: string;
-    enabled: boolean;
-}
-
-export interface ObsidianObjectsSettings {
-    templateFolder: string;
-    triggerTemplates: TriggerTemplateMapping[];
-    defaultOutputPath: string;
-}
-
-export const DEFAULT_SETTINGS: ObsidianObjectsSettings = {
-    templateFolder: 'Templates',
-    triggerTemplates: [
-        { trigger: '@project', templateName: 'project', outputPath: 'Projects/', enabled: true },
-        { trigger: '@atomic', templateName: 'atomic', outputPath: 'Zettelkasten/', enabled: true },
-        { trigger: '@person', templateName: 'person', enabled: true }
-    ],
-    defaultOutputPath: '',
-};
+import { ObsidianObjectsSettings, DEFAULT_SETTINGS, TriggerTemplateMapping } from './types';
+import { sanitizeFolderPath } from './utils';
 
 export class SettingsTab extends PluginSettingTab {
     private readonly plugin: ObsidianObjectsPlugin;
@@ -40,7 +19,13 @@ export class SettingsTab extends PluginSettingTab {
 
         containerEl.createEl('h2', { text: 'Obsidian Objects Settings' });
 
-        // --- Status Integration ---
+        this.renderStatus(containerEl);
+        this.renderGeneralConfig(containerEl);
+        this.renderTriggerMappings(containerEl);
+        this.renderFooter(containerEl);
+    }
+
+    private renderStatus(containerEl: HTMLElement) {
         const isTemplaterActive = !!this.plugin.templater.getApi();
         new Setting(containerEl)
             .setName('Integrations Status')
@@ -52,8 +37,9 @@ export class SettingsTab extends PluginSettingTab {
                 status.style.fontWeight = 'bold';
                 status.style.color = isTemplaterActive ? 'var(--text-success)' : 'var(--text-error)';
             });
+    }
 
-        // --- Global Configuration ---
+    private renderGeneralConfig(containerEl: HTMLElement) {
         containerEl.createEl('h3', { text: 'General Configuration' });
 
         new Setting(containerEl)
@@ -62,79 +48,30 @@ export class SettingsTab extends PluginSettingTab {
             .addText(text => text
                 .setPlaceholder('Templates')
                 .setValue(this.plugin.settings.templateFolder)
-                .onChange(v => { this.plugin.settings.templateFolder = v; this.debouncedSave(); }));
+                .onChange(v => { 
+                    this.plugin.settings.templateFolder = sanitizeFolderPath(v); 
+                    this.debouncedSave(); 
+                }));
 
         new Setting(containerEl)
             .setName('Default Output Path')
             .setDesc('Fallback folder for newly created notes.')
             .addText(text => text
-                .setPlaceholder('Inbox/')
+                .setPlaceholder('Inbox')
                 .setValue(this.plugin.settings.defaultOutputPath)
-                .onChange(v => { this.plugin.settings.defaultOutputPath = v; this.debouncedSave(); }));
+                .onChange(v => { 
+                    this.plugin.settings.defaultOutputPath = sanitizeFolderPath(v); 
+                    this.debouncedSave(); 
+                }));
+    }
 
-        // --- Trigger Mappings ---
+    private renderTriggerMappings(containerEl: HTMLElement) {
         containerEl.createEl('h3', { text: 'Trigger Mappings' });
 
         this.plugin.settings.triggerTemplates.forEach((mapping, index) => {
-            const s = new Setting(containerEl)
-                // .setName is omitted to remove "Rule X" labels
-                .addToggle(t => t
-                    .setValue(mapping.enabled)
-                    .onChange(async v => {
-                        mapping.enabled = v;
-                        await this.plugin.saveSettings();
-                    }))
-                .addText(t => t
-                    .setPlaceholder('@trigger')
-                    .setValue(mapping.trigger)
-                    .onChange(v => {
-                        mapping.trigger = v.startsWith('@') ? v : (v ? '@' + v : '@');
-                        t.setValue(mapping.trigger);
-                        this.debouncedSave();
-                    }))
-                .addText(t => {
-                    new TemplateSuggest(this.app, t.inputEl, this.plugin);
-                    t.setPlaceholder('Template')
-                        .setValue(mapping.templateName)
-                        .onChange(v => {
-                            mapping.templateName = v.replace(/\.md$/, '');
-                            this.debouncedSave();
-                        });
-                })
-                .addText(t => t
-                    .setPlaceholder('Target Folder')
-                    .setValue(mapping.outputPath || '')
-                    .onChange(v => {
-                        mapping.outputPath = v;
-                        this.debouncedSave();
-                    }))
-                .addExtraButton(b => b
-                    .setIcon('trash')
-                    .setTooltip('Delete Mapping')
-                    .onClick(async () => {
-                        this.plugin.settings.triggerTemplates.splice(index, 1);
-                        await this.plugin.saveSettings();
-                        this.display();
-                    }));
-            
-            // Layout Optimization: Remove the name/desc area completely
-            s.infoEl.remove();
-            
-            // Expand the control area to full width
-            s.settingEl.style.borderTop = 'none'; // Optional: cleaner look between rows
-            s.controlEl.style.width = '100%';
-            s.controlEl.style.display = 'flex';
-            s.controlEl.style.gap = '10px';
-            s.controlEl.style.justifyContent = 'space-between';
-            
-            // Make text inputs grow equally and take available space
-            s.controlEl.querySelectorAll('input[type="text"]').forEach((el: HTMLInputElement) => {
-                el.style.flex = '1 1 0';
-                el.style.minWidth = '80px';
-            });
+            this.renderMappingRow(containerEl, mapping, index);
         });
 
-        // --- Add New Mapping Button ---
         new Setting(containerEl)
             .addButton(btn => btn
                 .setButtonText('Add New Mapping')
@@ -144,8 +81,54 @@ export class SettingsTab extends PluginSettingTab {
                     await this.plugin.saveSettings();
                     this.display();
                 }));
+    }
 
-        // --- Maintenance Info ---
+    private renderMappingRow(containerEl: HTMLElement, mapping: TriggerTemplateMapping, index: number) {
+        const s = new Setting(containerEl)
+            .addToggle(t => t
+                .setValue(mapping.enabled)
+                .onChange(async v => {
+                    mapping.enabled = v;
+                    await this.plugin.saveSettings();
+                }))
+            .addText(t => t
+                .setPlaceholder('@trigger')
+                .setValue(mapping.trigger)
+                .onChange(v => {
+                    mapping.trigger = v.startsWith('@') ? v : (v ? '@' + v : '@');
+                    t.setValue(mapping.trigger);
+                    this.debouncedSave();
+                }))
+            .addText(t => {
+                new TemplateSuggest(this.app, t.inputEl, this.plugin);
+                t.setPlaceholder('Template')
+                    .setValue(mapping.templateName)
+                    .onChange(v => {
+                        mapping.templateName = v.replace(/\.md$/, '');
+                        this.debouncedSave();
+                    });
+            })
+            .addText(t => t
+                .setPlaceholder('Target Folder')
+                .setValue(mapping.outputPath || '')
+                .onChange(v => {
+                    mapping.outputPath = sanitizeFolderPath(v);
+                    this.debouncedSave();
+                }))
+            .addExtraButton(b => b
+                .setIcon('trash')
+                .setTooltip('Delete Mapping')
+                .onClick(async () => {
+                    this.plugin.settings.triggerTemplates.splice(index, 1);
+                    await this.plugin.saveSettings();
+                    this.display();
+                }));
+
+        s.infoEl.remove();
+        s.controlEl.addClass('objects-mapping-control');
+    }
+
+    private renderFooter(containerEl: HTMLElement) {
         const footer = containerEl.createDiv();
         footer.style.marginTop = '4rem';
         footer.style.textAlign = 'center';
@@ -160,24 +143,24 @@ class TemplateSuggest extends AbstractInputSuggest<TFile> {
         super(app, inputEl);
     }
     getSuggestions(query: string): TFile[] {
-        const root = this.plugin.settings.templateFolder;
+        const root = sanitizeFolderPath(this.plugin.settings.templateFolder);
         if (!root) return [];
         const lower = query.toLowerCase();
         return this.app.vault.getMarkdownFiles().filter(f => 
-            f.path.startsWith(root + '/') && f.path.toLowerCase().includes(lower)
+            (f.path.startsWith(root + '/') || f.parent?.path === root) && 
+            f.path.toLowerCase().includes(lower)
         );
     }
     renderSuggestion(file: TFile, el: HTMLElement): void {
-        const root = this.plugin.settings.templateFolder;
+        const root = sanitizeFolderPath(this.plugin.settings.templateFolder);
         const rel = file.path.startsWith(root + '/') ? file.path.substring(root.length + 1) : file.path;
         el.setText(rel.replace(/\.md$/, ''));
     }
     selectSuggestion(file: TFile): void {
-        const root = this.plugin.settings.templateFolder;
+        const root = sanitizeFolderPath(this.plugin.settings.templateFolder);
         const rel = file.path.startsWith(root + '/') ? file.path.substring(root.length + 1) : file.path;
         this.inputEl.value = rel.replace(/\.md$/, '');
         this.inputEl.dispatchEvent(new Event('input'));
-        this.inputEl.dispatchEvent(new Event('change'));
         this.close();
     }
 }

@@ -10,8 +10,9 @@ import {
     TFile 
 } from 'obsidian';
 import ObsidianObjectsPlugin from './main';
-import { TriggerTemplateMapping } from './settings';
+import { TriggerTemplateMapping } from './types';
 import { TitleModal } from './modal';
+import { sanitizeFolderPath, sanitizeFileName } from './utils';
 
 export class TriggerSuggest extends EditorSuggest<TriggerTemplateMapping> {
     private plugin: ObsidianObjectsPlugin;
@@ -25,18 +26,16 @@ export class TriggerSuggest extends EditorSuggest<TriggerTemplateMapping> {
         const line = editor.getLine(cursor.line).substring(0, cursor.ch);
         const match = line.match(/(?:^|\s)@(\w*)$/);
 
-        if (match) {
-            const query = match[1];
-            // Find the start of '@' correctly. match[0] might contain a leading space.
-            const triggerStart = line.length - (query.length + 1);
-            
-            return {
-                start: { line: cursor.line, ch: triggerStart },
-                end: cursor,
-                query: query,
-            };
-        }
-        return null;
+        if (!match) return null;
+
+        const query = match[1];
+        const triggerStart = cursor.ch - (query.length + 1);
+        
+        return {
+            start: { line: cursor.line, ch: triggerStart },
+            end: cursor,
+            query: query,
+        };
     }
 
     getSuggestions(context: EditorSuggestContext): TriggerTemplateMapping[] {
@@ -53,101 +52,92 @@ export class TriggerSuggest extends EditorSuggest<TriggerTemplateMapping> {
     async selectSuggestion(suggestion: TriggerTemplateMapping, evt: MouseEvent | KeyboardEvent) {
         const context = this.context;
         if (!context) return;
-        const editor = context.editor;
 
-        const folder = suggestion.outputPath ?? this.plugin.settings.defaultOutputPath;
-        const finalFolderPath = folder ? normalizePath(folder) : '';
+        const folder = suggestion.outputPath || this.plugin.settings.defaultOutputPath;
+        const targetFolder = sanitizeFolderPath(folder);
 
-        new TitleModal(this.app, this.plugin, finalFolderPath, async (title) => {
-            await this.createNote(suggestion, title, context, editor);
+        new TitleModal(this.app, this.plugin, targetFolder, async (title) => {
+            await this.handleNoteCreation(suggestion, title, context);
         }).open();
     }
 
-    private async createNote(
+    /**
+     * Handles the full logic of creating a note or linking to an existing one.
+     */
+    private async handleNoteCreation(
         suggestion: TriggerTemplateMapping, 
         title: string, 
-        context: EditorSuggestContext, 
-        editor: Editor
+        context: EditorSuggestContext
     ) {
-        const sanitizedTitle = title.replace(/[\\/:"*?<>|]/g, '_');
-        const folder = suggestion.outputPath ?? this.plugin.settings.defaultOutputPath;
-        const finalFolderPath = folder ? normalizePath(folder) : '';
-        const newNotePath = normalizePath(finalFolderPath ? `${finalFolderPath}/${sanitizedTitle}.md` : `${sanitizedTitle}.md`);
+        const editor = context.editor;
+        const sanitizedTitle = sanitizeFileName(title);
+        const folder = suggestion.outputPath || this.plugin.settings.defaultOutputPath;
+        const targetFolder = sanitizeFolderPath(folder);
+        const newNotePath = normalizePath(targetFolder ? `${targetFolder}/${sanitizedTitle}.md` : `${sanitizedTitle}.md`);
 
-        // 1. Check if the file already exists at the target path
         const existingFile = this.app.vault.getAbstractFileByPath(newNotePath);
-        const activeFile = this.app.workspace.getActiveFile();
-        const sourcePath = activeFile ? activeFile.path : '';
-        
+        const sourcePath = this.app.workspace.getActiveFile()?.path || '';
+
+        // 1. Check for existing file
         if (existingFile instanceof TFile) {
-            // File exists - create link and stop
-            let link = this.app.fileManager.generateMarkdownLink(existingFile, sourcePath, '', title);
-            link = link.trim(); // Ensure no trailing newlines
-            
-            editor.focus();
-            editor.replaceRange(link, context.start, context.end);
-            
-            // Set cursor to end of link
-            editor.setCursor({
-                line: context.start.line,
-                ch: context.start.ch + link.length
-            });
-            
+            this.insertLinkAndFocus(editor, existingFile, sourcePath, title, context);
             new Notice(`Linked to existing note: "${existingFile.basename}"`);
             return;
         }
-// 2. File doesn't exist - Proceed with creation
-let templateFile: TFile | null = null;
-const templateName = suggestion.templateName?.trim();
 
-if (templateName) {
-    const templateFolder = this.plugin.settings.templateFolder?.trim();
-    const templatePath = normalizePath(templateFolder ? `${templateFolder}/${templateName}.md` : `${templateName}.md`);
-    const abstractTemplate = this.app.vault.getAbstractFileByPath(templatePath);
-    
-    if (abstractTemplate instanceof TFile) {
-        templateFile = abstractTemplate;
-    } else {
-        new Notice(`Template file not found at: ${templatePath}`, 5000);
-        return;
-    }
-}
+        // 2. Resolve template
+        const templateFile = await this.getTemplateFile(suggestion);
+        if (!templateFile && suggestion.templateName) {
+             new Notice(`Template "${suggestion.templateName}" not found.`, 5000);
+             return;
+        }
 
-try {
-    // Create folder if it doesn't exist
-    if (finalFolderPath && !this.app.vault.getAbstractFileByPath(finalFolderPath)) {
-        await this.app.vault.createFolder(finalFolderPath);
-    }
+        try {
+            // 3. Ensure folder exists
+            if (targetFolder && !this.app.vault.getAbstractFileByPath(targetFolder)) {
+                await this.app.vault.createFolder(targetFolder);
+            }
 
-    // 3. Create note using either Templater or fallback
-    const newFile = await this.plugin.templater.createNoteFromTemplate(
-        templateFile, 
-        finalFolderPath, 
-        sanitizedTitle
-    );
+            // 4. Create and Link
+            const newFile = await this.plugin.templater.createNoteFromTemplate(
+                templateFile, 
+                targetFolder, 
+                sanitizedTitle
+            );
             
             if (newFile) {
-                let link = this.app.fileManager.generateMarkdownLink(newFile, sourcePath, '', title);
-                link = link.trim();
-
-                editor.focus();
-                editor.replaceRange(link, context.start, context.end);
-                
-                // Set cursor to end of link
-                editor.setCursor({
-                    line: context.start.line,
-                    ch: context.start.ch + link.length
-                });
-                
-                // Open the newly created note
+                this.insertLinkAndFocus(editor, newFile, sourcePath, title, context);
                 this.app.workspace.openLinkText(newFile.path, '', true);
                 new Notice(`Created new note: "${newFile.basename}"`);
             } else {
                 new Notice("Error: Failed to create the file.", 5000);
             }
         } catch (e) {
-            console.error("Obsidian Objects: Error in creation flow:", e);
+            console.error("Obsidian Objects: Error during creation flow:", e);
             new Notice("Error creating note. See console for details.");
         }
+    }
+
+    private async getTemplateFile(suggestion: TriggerTemplateMapping): Promise<TFile | null> {
+        const templateName = suggestion.templateName?.trim();
+        if (!templateName) return null;
+
+        const templateFolder = sanitizeFolderPath(this.plugin.settings.templateFolder);
+        const templatePath = normalizePath(templateFolder ? `${templateFolder}/${templateName}.md` : `${templateName}.md`);
+        const file = this.app.vault.getAbstractFileByPath(templatePath);
+        
+        return file instanceof TFile ? file : null;
+    }
+
+    private insertLinkAndFocus(editor: Editor, file: TFile, sourcePath: string, alias: string, context: EditorSuggestContext) {
+        let link = this.app.fileManager.generateMarkdownLink(file, sourcePath, '', alias).trim();
+        editor.replaceRange(link, context.start, context.end);
+        
+        const newCursorPos = {
+            line: context.start.line,
+            ch: context.start.ch + link.length
+        };
+        editor.setCursor(newCursorPos);
+        editor.focus();
     }
 }

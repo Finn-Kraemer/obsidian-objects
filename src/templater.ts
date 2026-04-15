@@ -1,17 +1,6 @@
-import { App, TFile, Plugin, normalizePath } from 'obsidian';
-
-export interface ITemplaterAPI {
-    create_new_note_from_template(
-        template_file: TFile,
-        folder: string,
-        new_filename: string,
-        open_new_note: boolean
-    ): Promise<TFile>;
-}
-
-export interface ITemplaterPlugin extends Plugin {
-    templater: ITemplaterAPI;
-}
+import { App, TFile, normalizePath } from 'obsidian';
+import { ITemplaterAPI, ITemplaterPlugin } from './types';
+import { sanitizeFolderPath } from './utils';
 
 export class TemplaterHandler {
     private app: App;
@@ -20,6 +9,9 @@ export class TemplaterHandler {
         this.app = app;
     }
 
+    /**
+     * Tries to get the Templater API if the plugin is enabled.
+     */
     getApi(): ITemplaterAPI | null {
         const plugins = (this.app as any).plugins;
         if (!plugins || !plugins.enabledPlugins.has('templater-obsidian')) {
@@ -29,35 +21,49 @@ export class TemplaterHandler {
         return plugin?.templater || null;
     }
 
+    /**
+     * Creates a new note from a template.
+     * Uses Templater if available, otherwise falls back to a basic replacement engine.
+     */
     async createNoteFromTemplate(templateFile: TFile | null, folderPath: string, fileName: string): Promise<TFile | null> {
         const api = this.getApi();
-        const newNotePath = normalizePath(folderPath ? `${folderPath}/${fileName}.md` : `${fileName}.md`);
+        const sanitizedFolder = sanitizeFolderPath(folderPath);
+        const newNotePath = normalizePath(sanitizedFolder ? `${sanitizedFolder}/${fileName}.md` : `${fileName}.md`);
 
         if (api && templateFile) {
-            return await api.create_new_note_from_template(templateFile, folderPath, fileName, false);
-        } else {
-            // Basic fallback or Templater disabled / No template provided
-            let content = "";
-            if (templateFile instanceof TFile) {
-                console.log("Obsidian Objects: Using internal placeholder logic.");
-                content = await this.app.vault.read(templateFile);
-                content = this.replacePlaceholders(content, fileName);
-            } else {
-                console.log("Obsidian Objects: No template provided, creating empty note.");
-            }
+            return await api.create_new_note_from_template(templateFile, sanitizedFolder, fileName, false);
+        }
 
+        // --- Fallback logic (Templater missing or no template provided) ---
+        let content = "";
+        if (templateFile) {
+            content = await this.app.vault.read(templateFile);
+            content = this.replacePlaceholders(content, fileName);
+        }
+
+        try {
             return await this.app.vault.create(newNotePath, content);
+        } catch (error) {
+            console.error(`Obsidian Objects: Failed to create file at "${newNotePath}":`, error);
+            return null;
         }
     }
 
+    /**
+     * Basic placeholder replacement for {{title}}, {{date}}, {{time}}
+     */
     private replacePlaceholders(content: string, title: string): string {
         const now = (window as any).moment();
-        const date = now.format("YYYY-MM-DD");
-        const time = now.format("HH:mm");
+        const replacements: Record<string, string> = {
+            '{{title}}': title,
+            '{{date}}': now.format("YYYY-MM-DD"),
+            '{{time}}': now.format("HH:mm"),
+        };
 
-        return content
-            .replace(/\{\{title\}\}/g, title)
-            .replace(/\{\{date\}\}/g, date)
-            .replace(/\{\{time\}\}/g, time);
+        let result = content;
+        for (const [placeholder, value] of Object.entries(replacements)) {
+            result = result.split(placeholder).join(value);
+        }
+        return result;
     }
 }
