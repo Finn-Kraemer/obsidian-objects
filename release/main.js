@@ -62,7 +62,9 @@ var SettingsTab = class extends import_obsidian2.PluginSettingTab {
   constructor(app, plugin) {
     super(app, plugin);
     this.plugin = plugin;
-    this.debouncedSave = (0, import_obsidian2.debounce)(() => this.plugin.saveSettings(), 500, true);
+    this.debouncedSave = (0, import_obsidian2.debounce)(() => {
+      void this.plugin.saveSettings();
+    }, 500, true);
   }
   /**
    * Renders the entire settings page.
@@ -80,10 +82,11 @@ var SettingsTab = class extends import_obsidian2.PluginSettingTab {
    */
   renderStatus(containerEl) {
     const isTemplaterActive = !!this.plugin.templater.getApi();
-    new import_obsidian2.Setting(containerEl).setName("Integration status").setDesc(isTemplaterActive ? 'Templater integration is active. Note: Ensure "Trigger Templater on new file creation" is enabled in Templater settings for full syntax support.' : "Templater plugin was not detected.").then((s) => {
+    new import_obsidian2.Setting(containerEl).setName("Integration status").setDesc(isTemplaterActive ? 'Templater integration is active. Note: Ensure "Trigger Templater on new file creation" is enabled in Templater settings for full syntax support' : "Templater plugin was not detected").then((s) => {
+      const statusText = isTemplaterActive ? "Integration active" : "Integration missing";
       const status = s.controlEl.createSpan({
         cls: "objects-status-indicator",
-        text: isTemplaterActive ? "\u2714 Active" : "\u2718 Missing"
+        text: statusText
       });
       status.addClass(isTemplaterActive ? "objects-status-active" : "objects-status-missing");
       if (isTemplaterActive) {
@@ -98,15 +101,15 @@ var SettingsTab = class extends import_obsidian2.PluginSettingTab {
    */
   renderGeneralConfig(containerEl) {
     new import_obsidian2.Setting(containerEl).setName("Path configuration").setHeading();
-    new import_obsidian2.Setting(containerEl).setName("Template folder").setDesc("Root directory for your markdown templates.").addText((text) => text.setPlaceholder("Templates").setValue(this.plugin.settings.templateFolder).onChange((v) => {
+    new import_obsidian2.Setting(containerEl).setName("Template folder").setDesc("Root directory for your Markdown templates").addText((text) => text.setPlaceholder("Templates").setValue(this.plugin.settings.templateFolder).onChange((v) => {
       this.plugin.settings.templateFolder = sanitizeFolderPath(v);
       this.debouncedSave();
     }));
-    new import_obsidian2.Setting(containerEl).setName("Default output path").setDesc("Fallback folder for newly created notes, if not defined in the mapping.").addText((text) => text.setPlaceholder("Inbox").setValue(this.plugin.settings.defaultOutputPath).onChange((v) => {
+    new import_obsidian2.Setting(containerEl).setName("Default output path").setDesc("Fallback folder for newly created notes, if not defined in the mapping").addText((text) => text.setPlaceholder("Inbox").setValue(this.plugin.settings.defaultOutputPath).onChange((v) => {
       this.plugin.settings.defaultOutputPath = sanitizeFolderPath(v);
       this.debouncedSave();
     }));
-    new import_obsidian2.Setting(containerEl).setName("Open created note").setDesc("Whether to automatically open the newly created note in a new tab.").addToggle((toggle) => toggle.setValue(this.plugin.settings.openNewNote).onChange((v) => {
+    new import_obsidian2.Setting(containerEl).setName("Open created note").setDesc("Whether to automatically open the newly created note in a new tab").addToggle((toggle) => toggle.setValue(this.plugin.settings.openNewNote).onChange((v) => {
       this.plugin.settings.openNewNote = v;
       this.debouncedSave();
     }));
@@ -138,34 +141,33 @@ var SettingsTab = class extends import_obsidian2.PluginSettingTab {
         t.setValue(mapping.trigger);
         this.debouncedSave();
       });
-      t.inputEl.style.flex = "1";
-      t.inputEl.style.width = "100%";
+      t.inputEl.setCssProps({ "flex": "1", "width": "100%" });
     }).addText((t) => {
       new TemplateSuggest(this.app, t.inputEl, this.plugin);
       t.setPlaceholder("Template").setValue(mapping.templateName).onChange((v) => {
         mapping.templateName = v.replace(/\.md$/, "");
         this.debouncedSave();
       });
-      t.inputEl.style.flex = "1";
-      t.inputEl.style.width = "100%";
+      t.inputEl.setCssProps({ "flex": "1", "width": "100%" });
     }).addText((t) => {
       t.setPlaceholder("Target folder").setValue(mapping.outputPath || "").onChange((v) => {
         mapping.outputPath = sanitizeFolderPath(v);
         this.debouncedSave();
       });
-      t.inputEl.style.flex = "1";
-      t.inputEl.style.width = "100%";
+      t.inputEl.setCssProps({ "flex": "1", "width": "100%" });
     }).addExtraButton((b) => b.setIcon("trash").setTooltip("Delete mapping").onClick(async () => {
       this.plugin.settings.triggerTemplates.splice(index, 1);
       await this.plugin.saveSettings();
       this.display();
     }));
     s.infoEl.remove();
-    s.controlEl.style.display = "flex";
-    s.controlEl.style.flex = "1";
-    s.controlEl.style.width = "100%";
-    s.controlEl.style.gap = "10px";
     s.controlEl.addClass("objects-mapping-control");
+    s.controlEl.setCssProps({
+      "display": "flex",
+      "flex": "1",
+      "width": "100%",
+      "gap": "10px"
+    });
   }
   renderFooter(containerEl) {
     containerEl.createDiv({
@@ -450,11 +452,11 @@ var TriggerSuggest = class extends import_obsidian5.EditorSuggest {
       if (newFile) {
         this.insertLinkAndFocus(editor, newFile, sourcePath, title, context);
         if (this.plugin.settings.openNewNote) {
-          this.app.workspace.openLinkText(newFile.path, "", true);
+          await this.app.workspace.openLinkText(newFile.path, "", true);
         }
         new import_obsidian5.Notice(`Created new note: "${newFile.basename}"`);
       } else {
-        new import_obsidian5.Notice("Error: Failed to create file.", 5e3);
+        new import_obsidian5.Notice("Error: failed to create file.", 5e3);
       }
     } catch (e) {
       console.warn("Objects: Error in creation process:", e);

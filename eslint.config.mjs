@@ -10,7 +10,7 @@ export default tseslint.config(
       obsidianmd,
     },
     rules: {
-      ...obsidianmd.configs.recommended.rules,
+      ...obsidianmd.configs.recommended,
       '@typescript-eslint/no-explicit-any': 'error',
       'no-console': ['error', { allow: ['warn', 'error', 'debug'] }],
     },

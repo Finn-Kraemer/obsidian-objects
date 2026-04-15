@@ -129,12 +129,12 @@ export class TriggerSuggest extends EditorSuggest<TriggerTemplateMapping> {
                 
                 // Open newly created file in a new tab (pane) if configured
                 if (this.plugin.settings.openNewNote) {
-                    this.app.workspace.openLinkText(newFile.path, '', true);
+                    await this.app.workspace.openLinkText(newFile.path, '', true);
                 }
                 
                 new Notice(`Created new note: "${newFile.basename}"`);
             } else {
-                new Notice("Error: Failed to create file.", 5000);
+                new Notice("Error: failed to create file.", 5000);
             }
         } catch (e) {
             console.warn("Objects: Error in creation process:", e);
