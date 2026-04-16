@@ -75,11 +75,14 @@ The demo vault is pre-configured with sample templates, folders, and triggers to
 
 ## How to use it
 
-1.  **Trigger**: Type `@` followed by the object type (e.g., `@project`) anywhere in your editor.
+1.  **Trigger**: Type `@` (or your custom symbol) followed by the object type (e.g., `@project`) anywhere in your editor.
 2.  **Identify**: A suggestion list appears—select your desired object.
 3.  **Name**: A modal pops up. Type the name of your new object (e.g., "Deep Work Initiative").
 4.  **Confirm**: Hit `Enter`.
 5.  **Result**: A clean markdown link is inserted at your cursor, and the new note is instantly created in the background using your specified template.
+
+> [!TIP]
+> **Trigger Conflicts**: If the `@` symbol is already being used by other plugins (like *Mention* or *Calendar*), you can easily change the **Trigger symbol** in the plugin settings to something else, like `#` or `!`.
 
 ---
 

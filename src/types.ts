@@ -20,6 +20,8 @@ export interface TriggerTemplateMapping {
 export interface ObsidianObjectsSettings {
     /** Global folder where templates are searched */
     templateFolder: string;
+    /** Character that triggers the suggester */
+    triggerSymbol: string;
     /** List of all configured trigger mappings */
     triggerTemplates: TriggerTemplateMapping[];
     /** Global standard output folder */
@@ -33,6 +35,7 @@ export interface ObsidianObjectsSettings {
  */
 export const DEFAULT_SETTINGS: ObsidianObjectsSettings = {
     templateFolder: 'Templates',
+    triggerSymbol: '@',
     triggerTemplates: [
         { trigger: '@project', templateName: 'project', outputPath: 'Projects/', enabled: true },
         { trigger: '@atomic', templateName: 'atomic', outputPath: 'Zettelkasten/', enabled: true },

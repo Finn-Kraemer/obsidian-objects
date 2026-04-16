@@ -32,6 +32,7 @@ var import_obsidian6 = require("obsidian");
 // src/types.ts
 var DEFAULT_SETTINGS = {
   templateFolder: "Templates",
+  triggerSymbol: "@",
   triggerTemplates: [
     { trigger: "@project", templateName: "project", outputPath: "Projects/", enabled: true },
     { trigger: "@atomic", templateName: "atomic", outputPath: "Zettelkasten/", enabled: true },
@@ -100,7 +101,23 @@ var SettingsTab = class extends import_obsidian2.PluginSettingTab {
    * Renders configuration like template and output folders.
    */
   renderGeneralConfig(containerEl) {
-    new import_obsidian2.Setting(containerEl).setName("Path configuration").setHeading();
+    new import_obsidian2.Setting(containerEl).setName("Core behavior").setHeading();
+    new import_obsidian2.Setting(containerEl).setName("Trigger symbol").setDesc("Character that triggers the template suggester (e.g. @ or #)").addText((text) => text.setPlaceholder("@").setValue(this.plugin.settings.triggerSymbol).onChange(async (v) => {
+      const oldSymbol = this.plugin.settings.triggerSymbol;
+      const newSymbol = v.trim() || "@";
+      if (oldSymbol !== newSymbol) {
+        this.plugin.settings.triggerSymbol = newSymbol;
+        this.plugin.settings.triggerTemplates.forEach((t) => {
+          if (t.trigger.startsWith(oldSymbol)) {
+            t.trigger = newSymbol + t.trigger.substring(oldSymbol.length);
+          } else if (!t.trigger.startsWith(newSymbol)) {
+            t.trigger = newSymbol + t.trigger;
+          }
+        });
+        await this.plugin.saveSettings();
+        this.display();
+      }
+    }));
     new import_obsidian2.Setting(containerEl).setName("Template folder").setDesc("Root directory for your Markdown templates").addText((text) => text.setPlaceholder("Templates").setValue(this.plugin.settings.templateFolder).onChange((v) => {
       this.plugin.settings.templateFolder = sanitizeFolderPath(v);
       this.debouncedSave();
@@ -123,7 +140,8 @@ var SettingsTab = class extends import_obsidian2.PluginSettingTab {
       this.renderMappingRow(containerEl, mapping, index);
     });
     new import_obsidian2.Setting(containerEl).addButton((btn) => btn.setButtonText("Add new mapping").setCta().onClick(async () => {
-      this.plugin.settings.triggerTemplates.push({ trigger: "@", templateName: "", enabled: true });
+      const symbol = this.plugin.settings.triggerSymbol;
+      this.plugin.settings.triggerTemplates.push({ trigger: symbol, templateName: "", enabled: true });
       await this.plugin.saveSettings();
       this.display();
     }));
@@ -132,12 +150,13 @@ var SettingsTab = class extends import_obsidian2.PluginSettingTab {
    * Renders a single mapping row (Trigger, Template, Path, Status).
    */
   renderMappingRow(containerEl, mapping, index) {
+    const symbol = this.plugin.settings.triggerSymbol;
     const s = new import_obsidian2.Setting(containerEl).addToggle((t) => t.setValue(mapping.enabled).onChange(async (v) => {
       mapping.enabled = v;
       await this.plugin.saveSettings();
     })).addText((t) => {
-      t.setPlaceholder("@trigger").setValue(mapping.trigger).onChange((v) => {
-        mapping.trigger = v.startsWith("@") ? v : v ? "@" + v : "@";
+      t.setPlaceholder(symbol + "trigger").setValue(mapping.trigger).onChange((v) => {
+        mapping.trigger = v.startsWith(symbol) ? v : v ? symbol + v : symbol;
         t.setValue(mapping.trigger);
         this.debouncedSave();
       });
@@ -171,9 +190,10 @@ var SettingsTab = class extends import_obsidian2.PluginSettingTab {
     });
   }
   renderFooter(containerEl) {
+    const symbol = this.plugin.settings.triggerSymbol;
     containerEl.createDiv({
       cls: "objects-settings-footer",
-      text: "Settings are saved automatically. Triggers must start with @."
+      text: `Settings are saved automatically. Triggers must start with ${symbol}.`
     });
   }
 };
@@ -421,11 +441,14 @@ var TriggerSuggest = class extends import_obsidian5.EditorSuggest {
    */
   onTrigger(cursor, editor) {
     const line = editor.getLine(cursor.line).substring(0, cursor.ch);
-    const match = /@(\w*)$/.exec(line);
+    const symbol = this.plugin.settings.triggerSymbol;
+    const escapedSymbol = symbol.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+    const regex = new RegExp(`${escapedSymbol}(\\w*)$`);
+    const match = regex.exec(line);
     if (!match)
       return null;
     const query = match[1];
-    const triggerStart = line.lastIndexOf("@");
+    const triggerStart = line.lastIndexOf(symbol);
     if (triggerStart > 0 && line.charAt(triggerStart - 1) !== " ") {
       return null;
     }
@@ -440,8 +463,9 @@ var TriggerSuggest = class extends import_obsidian5.EditorSuggest {
    */
   getSuggestions(context) {
     const query = context.query.toLowerCase();
+    const symbol = this.plugin.settings.triggerSymbol;
     return this.plugin.settings.triggerTemplates.filter(
-      (t) => t.enabled && t.trigger.toLowerCase().startsWith("@" + query)
+      (t) => t.enabled && t.trigger.toLowerCase().startsWith(symbol + query)
     );
   }
   renderSuggestion(suggestion, el) {

@@ -60,8 +60,35 @@ export class SettingsTab extends PluginSettingTab {
      */
     private renderGeneralConfig(containerEl: HTMLElement) {
         new Setting(containerEl)
-            .setName('Path configuration')
+            .setName('Core behavior')
             .setHeading();
+
+        new Setting(containerEl)
+            .setName('Trigger symbol')
+            .setDesc('Character that triggers the template suggester (e.g. @ or #)')
+            .addText(text => text
+                .setPlaceholder('@')
+                .setValue(this.plugin.settings.triggerSymbol)
+                .onChange(async v => {
+                    const oldSymbol = this.plugin.settings.triggerSymbol;
+                    const newSymbol = v.trim() || '@';
+                    
+                    if (oldSymbol !== newSymbol) {
+                        this.plugin.settings.triggerSymbol = newSymbol;
+                        
+                        // Update all existing triggers with the new symbol
+                        this.plugin.settings.triggerTemplates.forEach(t => {
+                            if (t.trigger.startsWith(oldSymbol)) {
+                                t.trigger = newSymbol + t.trigger.substring(oldSymbol.length);
+                            } else if (!t.trigger.startsWith(newSymbol)) {
+                                t.trigger = newSymbol + t.trigger;
+                            }
+                        });
+                        
+                        await this.plugin.saveSettings();
+                        this.display(); // Refresh to show updated triggers in the list
+                    }
+                }));
 
         new Setting(containerEl)
             .setName('Template folder')
@@ -113,7 +140,8 @@ export class SettingsTab extends PluginSettingTab {
                 .setButtonText('Add new mapping')
                 .setCta()
                 .onClick(async () => {
-                    this.plugin.settings.triggerTemplates.push({ trigger: '@', templateName: '', enabled: true });
+                    const symbol = this.plugin.settings.triggerSymbol;
+                    this.plugin.settings.triggerTemplates.push({ trigger: symbol, templateName: '', enabled: true });
                     await this.plugin.saveSettings();
                     this.display();
                 }));
@@ -123,6 +151,8 @@ export class SettingsTab extends PluginSettingTab {
      * Renders a single mapping row (Trigger, Template, Path, Status).
      */
     private renderMappingRow(containerEl: HTMLElement, mapping: TriggerTemplateMapping, index: number) {
+        const symbol = this.plugin.settings.triggerSymbol;
+        
         const s = new Setting(containerEl)
             .addToggle(t => t
                 .setValue(mapping.enabled)
@@ -131,10 +161,10 @@ export class SettingsTab extends PluginSettingTab {
                     await this.plugin.saveSettings();
                 }))
             .addText(t => { t
-                    .setPlaceholder('@trigger')
+                    .setPlaceholder(symbol + 'trigger')
                     .setValue(mapping.trigger)
                     .onChange(v => {
-                        mapping.trigger = v.startsWith('@') ? v : (v ? '@' + v : '@');
+                        mapping.trigger = v.startsWith(symbol) ? v : (v ? symbol + v : symbol);
                         t.setValue(mapping.trigger);
                         this.debouncedSave();
                     });
@@ -180,9 +210,10 @@ export class SettingsTab extends PluginSettingTab {
     }
 
     private renderFooter(containerEl: HTMLElement) {
+        const symbol = this.plugin.settings.triggerSymbol;
         containerEl.createDiv({
             cls: 'objects-settings-footer',
-            text: 'Settings are saved automatically. Triggers must start with @.'
+            text: `Settings are saved automatically. Triggers must start with ${symbol}.`
         });
     }
 }

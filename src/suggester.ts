@@ -31,15 +31,19 @@ export class TriggerSuggest extends EditorSuggest<TriggerTemplateMapping> {
      */
     onTrigger(cursor: EditorPosition, editor: Editor): EditorSuggestTriggerInfo | null {
         const line = editor.getLine(cursor.line).substring(0, cursor.ch);
+        const symbol = this.plugin.settings.triggerSymbol;
         
-        // Match '@' followed by word characters at the end of the line so far
-        const match = /@(\w*)$/.exec(line);
+        // Escape the symbol for use in a regular expression
+        const escapedSymbol = symbol.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+        const regex = new RegExp(`${escapedSymbol}(\\w*)$`);
+        
+        const match = regex.exec(line);
         if (!match) return null;
 
         const query = match[1];
-        const triggerStart = line.lastIndexOf('@');
+        const triggerStart = line.lastIndexOf(symbol);
         
-        // Ensure there is a space before @ or it's at the start of the line
+        // Ensure there is a space before the trigger symbol or it's at the start of the line
         if (triggerStart > 0 && line.charAt(triggerStart - 1) !== ' ') {
             return null;
         }
@@ -56,8 +60,9 @@ export class TriggerSuggest extends EditorSuggest<TriggerTemplateMapping> {
      */
     getSuggestions(context: EditorSuggestContext): TriggerTemplateMapping[] {
         const query = context.query.toLowerCase();
+        const symbol = this.plugin.settings.triggerSymbol;
         return this.plugin.settings.triggerTemplates.filter(t =>
-            t.enabled && t.trigger.toLowerCase().startsWith('@' + query)
+            t.enabled && t.trigger.toLowerCase().startsWith(symbol + query)
         );
     }
 
