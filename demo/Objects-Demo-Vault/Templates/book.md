@@ -1,9 +1,13 @@
+---
+tags:
+  - book
+author:
+---
 # 📚 Book: {{title}}
-Author: [[Unknown Author]]
-Status: #to-read
+Status: #to-read #read 
 
 ## 📝 Notes
-<% tp.file.cursor() %>
+
 
 ## 🔗 Related Objects
 - 

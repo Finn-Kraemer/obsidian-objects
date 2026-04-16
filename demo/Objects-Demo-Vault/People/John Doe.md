@@ -6,3 +6,4 @@ Senior Project Manager at Acme Corp.
 
 ## 🔗 Related Projects
 - [[Deep Work Initiative]]
+- [[John Doe's Biografie]]

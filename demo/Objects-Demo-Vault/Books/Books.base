@@ -1,0 +1,8 @@
+views:
+  - type: table
+    name: Table
+    filters:
+      and:
+        - file.inFolder("Books")
+        - and:
+            - file.name.endsWith(".base")

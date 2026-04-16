@@ -1,3 +1,7 @@
+---
+tags:
+  - project
+---
 # Project: {{title}}
 Created: {{date}} {{time}}
 
@@ -5,4 +9,4 @@ Created: {{date}} {{time}}
 - [ ] First goal
 
 ## Notes
-<% tp.file.cursor() %>
+
