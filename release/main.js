@@ -150,6 +150,7 @@ var SettingsTab = class extends import_obsidian2.PluginSettingTab {
       });
       t.inputEl.setCssProps({ "flex": "1", "width": "100%" });
     }).addText((t) => {
+      new FolderSuggest(this.app, t.inputEl);
       t.setPlaceholder("Target folder").setValue(mapping.outputPath || "").onChange((v) => {
         mapping.outputPath = sanitizeFolderPath(v);
         this.debouncedSave();
@@ -203,6 +204,27 @@ var TemplateSuggest = class extends import_obsidian2.AbstractInputSuggest {
     const root = sanitizeFolderPath(this.plugin.settings.templateFolder);
     const rel = file.path.startsWith(root + "/") ? file.path.substring(root.length + 1) : file.path;
     this.inputEl.value = rel.replace(/\.md$/, "");
+    this.inputEl.dispatchEvent(new Event("input"));
+    this.close();
+  }
+};
+var FolderSuggest = class extends import_obsidian2.AbstractInputSuggest {
+  constructor(app, inputEl) {
+    super(app, inputEl);
+    this.inputEl = inputEl;
+  }
+  getSuggestions(query) {
+    const lowerCaseInput = query.toLowerCase();
+    const folders = this.app.vault.getAllLoadedFiles().filter((f) => f instanceof import_obsidian2.TFolder).map((f) => f.path);
+    return folders.filter(
+      (folderPath) => folderPath.toLowerCase().includes(lowerCaseInput)
+    );
+  }
+  renderSuggestion(folder, el) {
+    el.setText(folder === "/" ? "Vault Root (/)" : folder);
+  }
+  selectSuggestion(folder) {
+    this.inputEl.value = folder;
     this.inputEl.dispatchEvent(new Event("input"));
     this.close();
   }
@@ -530,7 +552,7 @@ var ObjectsPlugin = class extends import_obsidian6.Plugin {
   verifyIntegrations() {
     const api = this.templater.getApi();
     if (!api) {
-      const message = 'Objects: The "Templater" plugin is not active. Please install and enable it for full functionality.';
+      const message = 'Objects: The "Templater" plugin is not active.';
       new import_obsidian6.Notice(message, 7e3);
     }
   }

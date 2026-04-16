@@ -1,4 +1,4 @@
-import { App, PluginSettingTab, Setting, TFile, AbstractInputSuggest, debounce } from 'obsidian';
+import { App, PluginSettingTab, Setting, TFile, AbstractInputSuggest, debounce, TFolder } from 'obsidian';
 import ObjectsPlugin from './main';
 import { TriggerTemplateMapping } from './types';
 import { sanitizeFolderPath } from './utils';
@@ -151,6 +151,7 @@ export class SettingsTab extends PluginSettingTab {
                 t.inputEl.setCssProps({ 'flex': '1', 'width': '100%' });
             })
             .addText(t => {
+                new FolderSuggest(this.app, t.inputEl);
                 t.setPlaceholder('Target folder')
                     .setValue(mapping.outputPath || '')
                     .onChange(v => {
@@ -214,6 +215,33 @@ class TemplateSuggest extends AbstractInputSuggest<TFile> {
         const root = sanitizeFolderPath(this.plugin.settings.templateFolder);
         const rel = file.path.startsWith(root + '/') ? file.path.substring(root.length + 1) : file.path;
         this.inputEl.value = rel.replace(/\.md$/, '');
+        this.inputEl.dispatchEvent(new Event('input'));
+        this.close();
+    }
+}
+
+export class FolderSuggest extends AbstractInputSuggest<string> {
+    constructor(app: App, private inputEl: HTMLInputElement) {
+        super(app, inputEl);
+    }
+    
+    getSuggestions(query: string): string[] {
+        const lowerCaseInput = query.toLowerCase();
+        const folders = this.app.vault.getAllLoadedFiles()
+            .filter((f): f is TFolder => f instanceof TFolder)
+            .map(f => f.path); 
+            
+        return folders.filter(folderPath => 
+            folderPath.toLowerCase().includes(lowerCaseInput)
+        );
+    }
+
+    renderSuggestion(folder: string, el: HTMLElement): void {
+        el.setText(folder === "/" ? "Vault Root (/)" : folder);
+    }
+
+    selectSuggestion(folder: string): void {
+        this.inputEl.value = folder;
         this.inputEl.dispatchEvent(new Event('input'));
         this.close();
     }

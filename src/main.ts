@@ -42,7 +42,7 @@ export default class ObjectsPlugin extends Plugin {
     private verifyIntegrations() {
         const api = this.templater.getApi();
         if (!api) {
-            const message = 'Objects: The "Templater" plugin is not active. Please install and enable it for full functionality.';
+            const message = 'Objects: The "Templater" plugin is not active.';
             new Notice(message, 7000);
         }
     }
