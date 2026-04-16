@@ -16,10 +16,9 @@ If you've experimented with apps like **Anytype** or **Capacities** because you 
 **Objects** brings that missing piece to your vault. No more manual folder navigation or messy template applications—just pure, structured creation without leaving your keyboard.
 
 <div align="center">
-  <figure>
-    <video src="assets/Example.mp4" width="600" controls></video>
-    <figcaption><i>See Objects in action</i></figcaption>
-  </figure>
+<video src="./assets/Example.mp4" controls width="70%">
+  Dein Browser unterstützt dieses Videoformat nicht.
+</video>
 </div>
 
 ---
