@@ -17,9 +17,7 @@ If you've experimented with apps like **Anytype** or **Capacities** because you 
 
 <div align="center">
   <figure>
-    <video controls width="600" autoplay loop muted>
-      <source src="assets/Example.webm" type="video/webm" />
-    </video>
+    <video src="assets/Example.mp4" width="600" controls></video>
     <figcaption><i>See Objects in action</i></figcaption>
   </figure>
 </div>
