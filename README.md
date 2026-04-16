@@ -15,6 +15,15 @@ If you've experimented with apps like **Anytype** or **Capacities** because you 
 
 **Objects** brings that missing piece to your vault. No more manual folder navigation or messy template applications—just pure, structured creation without leaving your keyboard.
 
+<div align="center">
+  <figure>
+    <video controls width="600" autoplay loop muted>
+      <source src="assets/Example.webm" type="video/webm" />
+    </video>
+    <figcaption><i>See Objects in action</i></figcaption>
+  </figure>
+</div>
+
 ---
 
 ## What it does
