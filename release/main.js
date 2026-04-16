@@ -318,26 +318,45 @@ var TitleModal = class extends import_obsidian4.Modal {
    * Creates the modal UI.
    */
   onOpen() {
-    const { contentEl } = this;
-    new import_obsidian4.Setting(contentEl).setName("Enter note title").setHeading();
-    const inputSetting = new import_obsidian4.Setting(contentEl).setName("Title").addText((text) => {
-      text.setPlaceholder("My new note").setValue(this.result).onChange((value) => {
-        this.result = value;
-      });
-      new FileSuggest(this.app, text.inputEl, this.plugin, this.targetFolder);
-      text.inputEl.addEventListener("keydown", (e) => {
-        if (e.key === "Enter") {
-          setTimeout(() => this.submit(), 100);
-        }
-      });
-      text.inputEl.focus();
+    const { contentEl, titleEl } = this;
+    titleEl.setText("Create or link note");
+    contentEl.createEl("div", { text: "Enter note title:", cls: "objects-modal-description" });
+    const inputContainer = contentEl.createDiv({ cls: "objects-modal-input-container" });
+    inputContainer.setCssProps({
+      "margin-top": "10px",
+      "margin-bottom": "15px"
     });
-    inputSetting.infoEl.remove();
-    new import_obsidian4.Setting(contentEl).addButton(
-      (btn) => btn.setButtonText("Create or link").setCta().onClick(() => this.submit())
-    ).addButton(
-      (btn) => btn.setButtonText("Cancel").onClick(() => this.close())
-    );
+    const textComponent = new import_obsidian4.TextComponent(inputContainer);
+    const inputEl = textComponent.inputEl;
+    inputEl.addClass("objects-modal-input");
+    inputEl.setCssProps({
+      "width": "100%",
+      "box-sizing": "border-box"
+    });
+    inputEl.placeholder = "My new note";
+    inputEl.value = this.result;
+    textComponent.onChange((value) => {
+      this.result = value;
+    });
+    new FileSuggest(this.app, inputEl, this.plugin, this.targetFolder);
+    inputEl.addEventListener("keydown", (e) => {
+      if (e.key === "Enter") {
+        setTimeout(() => this.submit(), 100);
+      }
+    });
+    setTimeout(() => {
+      if (!this.isClosed) {
+        inputEl.focus();
+      }
+    }, 50);
+    const buttonContainer = contentEl.createDiv({ cls: "modal-button-container" });
+    const submitBtn = buttonContainer.createEl("button", {
+      text: "Create or link",
+      cls: "mod-cta"
+    });
+    submitBtn.addEventListener("click", () => this.submit());
+    const cancelBtn = buttonContainer.createEl("button", { text: "Cancel" });
+    cancelBtn.addEventListener("click", () => this.close());
   }
   /**
    * Validates input and executes the submit callback.
