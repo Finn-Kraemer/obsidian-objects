@@ -1,0 +1,241 @@
+{
+  "main": {
+    "id": "da026bec5c589b9c",
+    "type": "split",
+    "children": [
+      {
+        "id": "07451eec4f086867",
+        "type": "tabs",
+        "children": [
+          {
+            "id": "0de9cae30691076a",
+            "type": "leaf",
+            "state": {
+              "type": "markdown",
+              "state": {
+                "file": "Example.md",
+                "mode": "source",
+                "source": false
+              },
+              "icon": "lucide-file",
+              "title": "Example"
+            }
+          },
+          {
+            "id": "d041807b784ddc7e",
+            "type": "leaf",
+            "state": {
+              "type": "markdown",
+              "state": {
+                "file": "Example.md",
+                "mode": "source",
+                "source": false
+              },
+              "icon": "lucide-file",
+              "title": "Example"
+            }
+          }
+        ],
+        "currentTab": 1
+      }
+    ],
+    "direction": "vertical"
+  },
+  "left": {
+    "id": "bfd675d3ba5f5926",
+    "type": "split",
+    "children": [
+      {
+        "id": "d02a3850773f1f5d",
+        "type": "tabs",
+        "children": [
+          {
+            "id": "96314be3e42872d0",
+            "type": "leaf",
+            "state": {
+              "type": "file-explorer",
+              "state": {
+                "sortOrder": "alphabetical",
+                "autoReveal": false
+              },
+              "icon": "lucide-folder-closed",
+              "title": "Files"
+            }
+          },
+          {
+            "id": "da5e058eb65e1a56",
+            "type": "leaf",
+            "state": {
+              "type": "search",
+              "state": {
+                "query": "",
+                "matchingCase": false,
+                "explainSearch": false,
+                "collapseAll": false,
+                "extraContext": false,
+                "sortOrder": "alphabetical"
+              },
+              "icon": "lucide-search",
+              "title": "Search"
+            }
+          },
+          {
+            "id": "5544cd42ab56943f",
+            "type": "leaf",
+            "state": {
+              "type": "bookmarks",
+              "state": {},
+              "icon": "lucide-bookmark",
+              "title": "Bookmarks"
+            }
+          }
+        ]
+      }
+    ],
+    "direction": "horizontal",
+    "width": 300
+  },
+  "right": {
+    "id": "994a43091bdb596a",
+    "type": "split",
+    "children": [
+      {
+        "id": "bc4f9def6b9fed3d",
+        "type": "tabs",
+        "children": [
+          {
+            "id": "757a787224c97531",
+            "type": "leaf",
+            "state": {
+              "type": "backlink",
+              "state": {
+                "file": "Example.md",
+                "collapseAll": false,
+                "extraContext": false,
+                "sortOrder": "alphabetical",
+                "showSearch": false,
+                "searchQuery": "",
+                "backlinkCollapsed": false,
+                "unlinkedCollapsed": true
+              },
+              "icon": "links-coming-in",
+              "title": "Backlinks for Example"
+            }
+          },
+          {
+            "id": "a55bdee47c15b1c1",
+            "type": "leaf",
+            "state": {
+              "type": "outgoing-link",
+              "state": {
+                "file": "Welcome.md",
+                "linksCollapsed": false,
+                "unlinkedCollapsed": true
+              },
+              "icon": "links-going-out",
+              "title": "Outgoing links from Welcome"
+            }
+          },
+          {
+            "id": "9f71b3a137d5e4c9",
+            "type": "leaf",
+            "state": {
+              "type": "tag",
+              "state": {
+                "sortOrder": "frequency",
+                "useHierarchy": true,
+                "showSearch": false,
+                "searchQuery": ""
+              },
+              "icon": "lucide-tags",
+              "title": "Tags"
+            }
+          },
+          {
+            "id": "46a0640783831271",
+            "type": "leaf",
+            "state": {
+              "type": "all-properties",
+              "state": {
+                "sortOrder": "frequency",
+                "showSearch": false,
+                "searchQuery": ""
+              },
+              "icon": "lucide-archive",
+              "title": "All properties"
+            }
+          },
+          {
+            "id": "b8e2b6fc92d982cc",
+            "type": "leaf",
+            "state": {
+              "type": "outline",
+              "state": {
+                "file": "Welcome.md",
+                "followCursor": false,
+                "showSearch": false,
+                "searchQuery": ""
+              },
+              "icon": "lucide-list",
+              "title": "Outline of Welcome"
+            }
+          }
+        ]
+      }
+    ],
+    "direction": "horizontal",
+    "width": 300,
+    "collapsed": true
+  },
+  "left-ribbon": {
+    "hiddenItems": {
+      "obsidian42-brat:BRAT": false,
+      "switcher:Open quick switcher": false,
+      "graph:Open graph view": false,
+      "canvas:Create new canvas": false,
+      "daily-notes:Open today's daily note": false,
+      "templates:Insert template": false,
+      "command-palette:Open command palette": false,
+      "bases:Create new base": false,
+      "templater-obsidian:Templater": false,
+      "flat-financing:Obsidian accounting": false
+    }
+  },
+  "active": "d041807b784ddc7e",
+  "lastOpenFiles": [
+    "accounting.beancount",
+    "Dashboard.md",
+    "Example.md",
+    "Welcome.md",
+    "Untitled.md",
+    "People/Max Mustermann.md",
+    "Templates/atomic.md",
+    "Books/Super DUper Secret Project.md",
+    "Templates/book.md",
+    "Meeting.md",
+    "Templates/person.md",
+    "People/Thomas.md",
+    "Inbox/Notes/Notes.base",
+    "Templates/note.md",
+    "Templates/project.md",
+    "People/John Doe.md",
+    "People/People.base",
+    "Zettelkasten/notiz.md",
+    "Invalid date.md",
+    "Projects/Spring Boot 3 Backend.md",
+    "Books/Books.base",
+    "Books/buch.md",
+    "Inbox/Notes/test.md",
+    "Inbox/Notes",
+    "Books/John Doe's Biografie.md",
+    "Books",
+    "Zettelkasten/AtomicNotes.base",
+    "Projects/Projects.base",
+    "Projects/Object-Oriented PKM System.md",
+    "Projects/code.md",
+    "Book/Faust.md",
+    "Book",
+    "People/Thomas Gast.md",
+    "Zettelkasten/Exlegionär.md"
+  ]
+}
