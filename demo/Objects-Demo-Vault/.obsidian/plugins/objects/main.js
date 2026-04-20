@@ -437,21 +437,19 @@ var TriggerSuggest = class extends import_obsidian5.EditorSuggest {
   }
   /**
    * Checks if the suggester should be triggered at the current cursor position.
-   * Trigger: '@' at the start of a line or after a space.
+   * Trigger: Symbol at the start of a line or after a space/punctuation.
    */
   onTrigger(cursor, editor) {
     const line = editor.getLine(cursor.line).substring(0, cursor.ch);
     const symbol = this.plugin.settings.triggerSymbol;
     const escapedSymbol = symbol.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
-    const regex = new RegExp(`${escapedSymbol}(\\w*)$`);
-    const match = regex.exec(line);
+    const regex = new RegExp(`(?:^|[\\s.,!?;:])(${escapedSymbol}(\\w*))$`);
+    const match = line.match(regex);
     if (!match)
       return null;
-    const query = match[1];
-    const triggerStart = line.lastIndexOf(symbol);
-    if (triggerStart > 0 && line.charAt(triggerStart - 1) !== " ") {
-      return null;
-    }
+    const fullTriggerMatch = match[1];
+    const query = match[2];
+    const triggerStart = cursor.ch - fullTriggerMatch.length;
     return {
       start: { line: cursor.line, ch: triggerStart },
       end: cursor,

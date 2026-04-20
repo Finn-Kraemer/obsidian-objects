@@ -27,7 +27,7 @@ export class TriggerSuggest extends EditorSuggest<TriggerTemplateMapping> {
 
     /**
      * Checks if the suggester should be triggered at the current cursor position.
-     * Trigger: '@' at the start of a line or after a space.
+     * Trigger: Symbol at the start of a line or after a space/punctuation.
      */
     onTrigger(cursor: EditorPosition, editor: Editor): EditorSuggestTriggerInfo | null {
         const line = editor.getLine(cursor.line).substring(0, cursor.ch);
@@ -35,18 +35,23 @@ export class TriggerSuggest extends EditorSuggest<TriggerTemplateMapping> {
         
         // Escape the symbol for use in a regular expression
         const escapedSymbol = symbol.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-        const regex = new RegExp(`${escapedSymbol}(\\w*)$`);
         
-        const match = regex.exec(line);
+        /**
+         * The regex looks for:
+         * 1. (?:^|[\s.,!?;:]) - Boundary: Start of line OR space OR common punctuation
+         * 2. (${escapedSymbol}(\w*)) - The trigger and the query (captured in group 1 and 2)
+         * 3. $ - End of the substring (at the cursor)
+         */
+        const regex = new RegExp(`(?:^|[\\s.,!?;:])(${escapedSymbol}(\\w*))$`);
+        const match = line.match(regex);
+
         if (!match) return null;
 
-        const query = match[1];
-        const triggerStart = line.lastIndexOf(symbol);
+        const fullTriggerMatch = match[1]; // e.g. "@project"
+        const query = match[2];           // e.g. "project"
         
-        // Ensure there is a space before the trigger symbol or it's at the start of the line
-        if (triggerStart > 0 && line.charAt(triggerStart - 1) !== ' ') {
-            return null;
-        }
+        // Calculate the exact start character position
+        const triggerStart = cursor.ch - fullTriggerMatch.length;
 
         return {
             start: { line: cursor.line, ch: triggerStart },
