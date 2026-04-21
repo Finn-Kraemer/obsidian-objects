@@ -40,7 +40,10 @@ var DEFAULT_SETTINGS = {
   ],
   defaultOutputPath: "",
   openNewNote: true,
-  useProperties: true
+  useProperties: false,
+  archiveTag: "",
+  archivePropertyKey: "",
+  archivePropertyValue: ""
 };
 
 // src/settings.ts
@@ -76,6 +79,7 @@ var SettingsTab = class extends import_obsidian2.PluginSettingTab {
     containerEl.empty();
     this.renderStatus(containerEl);
     this.renderGeneralConfig(containerEl);
+    this.renderArchiveConfig(containerEl);
     this.renderTriggerMappings(containerEl);
     this.renderFooter(containerEl);
   }
@@ -127,13 +131,31 @@ var SettingsTab = class extends import_obsidian2.PluginSettingTab {
       this.plugin.settings.defaultOutputPath = sanitizeFolderPath(v);
       this.debouncedSave();
     }));
-    new import_obsidian2.Setting(containerEl).setName("Use file properties").setDesc("Whether to allow defining and filtering by frontmatter properties (e.g. type: person)").addToggle((toggle) => toggle.setValue(this.plugin.settings.useProperties).onChange(async (v) => {
+    new import_obsidian2.Setting(containerEl).setName("Use file properties").setDesc("Whether to allow defining and filtering by frontmatter properties").addToggle((toggle) => toggle.setValue(this.plugin.settings.useProperties).onChange(async (v) => {
       this.plugin.settings.useProperties = v;
       await this.plugin.saveSettings();
       this.display();
     }));
     new import_obsidian2.Setting(containerEl).setName("Open created note").setDesc("Whether to automatically open the newly created note in a new tab").addToggle((toggle) => toggle.setValue(this.plugin.settings.openNewNote).onChange((v) => {
       this.plugin.settings.openNewNote = v;
+      this.debouncedSave();
+    }));
+  }
+  /**
+   * Renders archive settings.
+   */
+  renderArchiveConfig(containerEl) {
+    new import_obsidian2.Setting(containerEl).setName("Archive behavior").setDesc("Define how to identify archived notes to exclude them from suggestions").setHeading();
+    new import_obsidian2.Setting(containerEl).setName("Archive tag").setDesc("Tag that marks a note as archived (e.g. #archived)").addText((text) => text.setPlaceholder("#archived").setValue(this.plugin.settings.archiveTag).onChange((v) => {
+      this.plugin.settings.archiveTag = v.trim();
+      this.debouncedSave();
+    }));
+    new import_obsidian2.Setting(containerEl).setName("Archive property key").setDesc("Frontmatter property key to identify archived notes (e.g. Archived)").addText((text) => text.setPlaceholder("Archived").setValue(this.plugin.settings.archivePropertyKey).onChange((v) => {
+      this.plugin.settings.archivePropertyKey = v.trim();
+      this.debouncedSave();
+    }));
+    new import_obsidian2.Setting(containerEl).setName("Archive property value").setDesc("Expected value for the archive property").addText((text) => text.setPlaceholder("True").setValue(this.plugin.settings.archivePropertyValue).onChange((v) => {
+      this.plugin.settings.archivePropertyValue = v.trim();
       this.debouncedSave();
     }));
   }
@@ -446,17 +468,38 @@ var FileSuggest = class extends import_obsidian4.AbstractInputSuggest {
     const folder = this.mapping.outputPath || this.plugin.settings.defaultOutputPath;
     const normalizedTarget = sanitizeFolderPath(folder);
     const { propertyKey, propertyValue } = this.mapping;
-    const useProperties = this.plugin.settings.useProperties;
+    const { useProperties, archiveTag, archivePropertyKey, archivePropertyValue } = this.plugin.settings;
+    const normalizedArchiveTag = archiveTag ? archiveTag.replace(/^#/, "").toLowerCase() : null;
     return files.filter((file) => {
+      const cache = this.app.metadataCache.getFileCache(file);
+      if (cache) {
+        if (normalizedArchiveTag) {
+          const tags = (0, import_obsidian4.getAllTags)(cache);
+          if (tags && tags.some((tag) => tag.replace(/^#/, "").toLowerCase() === normalizedArchiveTag)) {
+            return false;
+          }
+        }
+        if (archivePropertyKey && archivePropertyValue) {
+          const frontmatter = cache.frontmatter;
+          if (frontmatter) {
+            const val = frontmatter[archivePropertyKey];
+            if (val !== void 0 && String(val).toLowerCase() === archivePropertyValue.toLowerCase()) {
+              return false;
+            }
+          }
+        }
+      }
       if (normalizedTarget !== "") {
         const folderPath = file.parent ? sanitizeFolderPath(file.parent.path) : "";
         if (folderPath !== normalizedTarget)
           return false;
       }
       if (useProperties && propertyKey && propertyValue) {
-        const cache = this.app.metadataCache.getFileCache(file);
         const frontmatter = cache == null ? void 0 : cache.frontmatter;
-        if (!frontmatter || frontmatter[propertyKey] !== propertyValue) {
+        if (!frontmatter)
+          return false;
+        const val = frontmatter[propertyKey];
+        if (String(val).toLowerCase() !== propertyValue.toLowerCase()) {
           return false;
         }
       }

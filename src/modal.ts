@@ -1,4 +1,4 @@
-import { App, Modal, TextComponent, TFile, AbstractInputSuggest } from 'obsidian';
+import { App, Modal, TextComponent, TFile, AbstractInputSuggest, getAllTags } from 'obsidian';
 import ObjectsPlugin from './main';
 import { TriggerTemplateMapping } from './types';
 import { sanitizeFolderPath } from './utils';
@@ -135,25 +135,55 @@ class FileSuggest extends AbstractInputSuggest<TFile> {
         const folder = this.mapping.outputPath || this.plugin.settings.defaultOutputPath;
         const normalizedTarget = sanitizeFolderPath(folder);
         const { propertyKey, propertyValue } = this.mapping;
-        const useProperties = this.plugin.settings.useProperties;
+        const { useProperties, archiveTag, archivePropertyKey, archivePropertyValue } = this.plugin.settings;
+
+        // Pre-normalize archive tag for comparison
+        const normalizedArchiveTag = archiveTag ? archiveTag.replace(/^#/, '').toLowerCase() : null;
 
         return files.filter(file => {
-            // 1. Filter by folder if defined
+            const cache = this.app.metadataCache.getFileCache(file);
+
+            // 1. Filter out archived notes
+            if (cache) {
+                // Check tag
+                if (normalizedArchiveTag) {
+                    const tags = getAllTags(cache);
+                    if (tags && tags.some(tag => tag.replace(/^#/, '').toLowerCase() === normalizedArchiveTag)) {
+                        return false;
+                    }
+                }
+
+                // Check property
+                if (archivePropertyKey && archivePropertyValue) {
+                    const frontmatter = cache.frontmatter;
+                    if (frontmatter) {
+                        const val = frontmatter[archivePropertyKey];
+                        if (val !== undefined && String(val).toLowerCase() === archivePropertyValue.toLowerCase()) {
+                            return false;
+                        }
+                    }
+                }
+            }
+
+            // 2. Filter by folder if defined
             if (normalizedTarget !== '') {
                 const folderPath = file.parent ? sanitizeFolderPath(file.parent.path) : '';
                 if (folderPath !== normalizedTarget) return false;
             }
 
-            // 2. Filter by property if defined AND feature is enabled
+            // 3. Filter by mapping property if defined AND feature is enabled
             if (useProperties && propertyKey && propertyValue) {
-                const cache = this.app.metadataCache.getFileCache(file);
                 const frontmatter = cache?.frontmatter;
-                if (!frontmatter || frontmatter[propertyKey] !== propertyValue) {
+                if (!frontmatter) return false;
+                
+                const val = frontmatter[propertyKey];
+                // Support both exact match and tag match (if value starts with #)
+                if (String(val).toLowerCase() !== propertyValue.toLowerCase()) {
                     return false;
                 }
             }
 
-            // 3. Filter by query
+            // 4. Filter by query
             const matchesQuery = file.basename.toLowerCase().includes(lowerCaseQuery);
             return matchesQuery;
         }).slice(0, 10); // Limit to 10 suggestions

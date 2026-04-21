@@ -26,6 +26,7 @@ export class SettingsTab extends PluginSettingTab {
 
         this.renderStatus(containerEl);
         this.renderGeneralConfig(containerEl);
+        this.renderArchiveConfig(containerEl);
         this.renderTriggerMappings(containerEl);
         this.renderFooter(containerEl);
     }
@@ -114,7 +115,7 @@ export class SettingsTab extends PluginSettingTab {
 
         new Setting(containerEl)
             .setName('Use file properties')
-            .setDesc('Whether to allow defining and filtering by frontmatter properties (e.g. type: person)')
+            .setDesc('Whether to allow defining and filtering by frontmatter properties')
             .addToggle(toggle => toggle
                 .setValue(this.plugin.settings.useProperties)
                 .onChange(async v => {
@@ -130,6 +131,49 @@ export class SettingsTab extends PluginSettingTab {
                 .setValue(this.plugin.settings.openNewNote)
                 .onChange(v => {
                     this.plugin.settings.openNewNote = v;
+                    this.debouncedSave();
+                }));
+    }
+
+    /**
+     * Renders archive settings.
+     */
+    private renderArchiveConfig(containerEl: HTMLElement) {
+        new Setting(containerEl)
+            .setName('Archive behavior')
+            .setDesc('Define how to identify archived notes to exclude them from suggestions')
+            .setHeading();
+
+        new Setting(containerEl)
+            .setName('Archive tag')
+            .setDesc('Tag that marks a note as archived (e.g. #archived)')
+            .addText(text => text
+                .setPlaceholder('#archived')
+                .setValue(this.plugin.settings.archiveTag)
+                .onChange(v => {
+                    this.plugin.settings.archiveTag = v.trim();
+                    this.debouncedSave();
+                }));
+
+        new Setting(containerEl)
+            .setName('Archive property key')
+            .setDesc('Frontmatter property key to identify archived notes (e.g. Archived)')
+            .addText(text => text
+                .setPlaceholder('Archived')
+                .setValue(this.plugin.settings.archivePropertyKey)
+                .onChange(v => {
+                    this.plugin.settings.archivePropertyKey = v.trim();
+                    this.debouncedSave();
+                }));
+
+        new Setting(containerEl)
+            .setName('Archive property value')
+            .setDesc('Expected value for the archive property')
+            .addText(text => text
+                .setPlaceholder('True')
+                .setValue(this.plugin.settings.archivePropertyValue)
+                .onChange(v => {
+                    this.plugin.settings.archivePropertyValue = v.trim();
                     this.debouncedSave();
                 }));
     }

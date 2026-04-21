@@ -34,6 +34,12 @@ export interface ObsidianObjectsSettings {
     openNewNote: boolean;
     /** Whether to use file properties for filtering and creation */
     useProperties: boolean;
+    /** Optional tag to identify archived notes (e.g., "#archived") */
+    archiveTag: string;
+    /** Optional property key to identify archived notes (e.g., "Archived") */
+    archivePropertyKey: string;
+    /** Optional property value to identify archived notes (e.g., "true") */
+    archivePropertyValue: string;
 }
 
 /**
@@ -50,6 +56,9 @@ export const DEFAULT_SETTINGS: ObsidianObjectsSettings = {
     defaultOutputPath: '',
     openNewNote: true,
     useProperties: true,
+    archiveTag: '',
+    archivePropertyKey: '',
+    archivePropertyValue: '',
 };
 
 /**
