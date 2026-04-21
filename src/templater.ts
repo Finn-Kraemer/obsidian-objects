@@ -29,7 +29,13 @@ export class TemplaterHandler {
     /**
      * Creates a new note from a template.
      */
-    async createNoteFromTemplate(templateFile: TFile | null, folderPath: string, fileName: string): Promise<TFile | null> {
+    async createNoteFromTemplate(
+        templateFile: TFile | null, 
+        folderPath: string, 
+        fileName: string,
+        propertyKey?: string,
+        propertyValue?: string
+    ): Promise<TFile | null> {
         const api = this.getApi();
         const sanitizedFolder = sanitizeFolderPath(folderPath);
         const newNotePath = normalizePath(sanitizedFolder ? `${sanitizedFolder}/${fileName}.md` : `${fileName}.md`);
@@ -52,14 +58,22 @@ export class TemplaterHandler {
             return null;
         }
 
-        // 4. If Templater is active, let it process the file for its own tags (<% ... %>)
+        // 4. Add frontmatter properties if defined
+        if (newFile && propertyKey && propertyValue) {
+            try {
+                await this.app.fileManager.processFrontMatter(newFile, (frontmatter) => {
+                    frontmatter[propertyKey] = propertyValue;
+                });
+            } catch (e) {
+                console.warn("Objects: Failed to add frontmatter properties:", e);
+            }
+        }
+
+        // 5. If Templater is active, let it process the file for its own tags (<% ... %>)
         if (api && newFile) {
             try {
-                // We use the already created file and overwrite it with Templater-processed content
-                // Note: ITemplaterAPI might not have a direct 'process' method in our interface yet,
-                // but usually create_new_note_from_template is the only way via API.
-                // However, since we already created the file to support our placeholders, 
-                // we can just return it. If the user has Templater "Trigger on new file" enabled, 
+                // We use the already created file and return it.
+                // If the user has Templater "Trigger on new file" enabled, 
                 // it will run automatically anyway.
             } catch (e) {
                 console.warn("Objects: Templater post-processing failed:", e);

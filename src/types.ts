@@ -10,6 +10,10 @@ export interface TriggerTemplateMapping {
     templateName: string;
     /** Optional specific output folder for this trigger */
     outputPath?: string;
+    /** Optional property key in frontmatter (e.g., "type") */
+    propertyKey?: string;
+    /** Optional property value in frontmatter (e.g., "#project") */
+    propertyValue?: string;
     /** Whether this mapping is active */
     enabled: boolean;
 }
@@ -28,6 +32,8 @@ export interface ObsidianObjectsSettings {
     defaultOutputPath: string;
     /** Whether to open the newly created note in a new tab */
     openNewNote: boolean;
+    /** Whether to use file properties for filtering and creation */
+    useProperties: boolean;
 }
 
 /**
@@ -43,6 +49,7 @@ export const DEFAULT_SETTINGS: ObsidianObjectsSettings = {
     ],
     defaultOutputPath: '',
     openNewNote: true,
+    useProperties: true,
 };
 
 /**

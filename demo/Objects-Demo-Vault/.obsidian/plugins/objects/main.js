@@ -39,7 +39,8 @@ var DEFAULT_SETTINGS = {
     { trigger: "@person", templateName: "person", enabled: true }
   ],
   defaultOutputPath: "",
-  openNewNote: true
+  openNewNote: true,
+  useProperties: true
 };
 
 // src/settings.ts
@@ -126,6 +127,11 @@ var SettingsTab = class extends import_obsidian2.PluginSettingTab {
       this.plugin.settings.defaultOutputPath = sanitizeFolderPath(v);
       this.debouncedSave();
     }));
+    new import_obsidian2.Setting(containerEl).setName("Use file properties").setDesc("Whether to allow defining and filtering by frontmatter properties (e.g. type: person)").addToggle((toggle) => toggle.setValue(this.plugin.settings.useProperties).onChange(async (v) => {
+      this.plugin.settings.useProperties = v;
+      await this.plugin.saveSettings();
+      this.display();
+    }));
     new import_obsidian2.Setting(containerEl).setName("Open created note").setDesc("Whether to automatically open the newly created note in a new tab").addToggle((toggle) => toggle.setValue(this.plugin.settings.openNewNote).onChange((v) => {
       this.plugin.settings.openNewNote = v;
       this.debouncedSave();
@@ -151,6 +157,7 @@ var SettingsTab = class extends import_obsidian2.PluginSettingTab {
    */
   renderMappingRow(containerEl, mapping, index) {
     const symbol = this.plugin.settings.triggerSymbol;
+    const useProperties = this.plugin.settings.useProperties;
     const s = new import_obsidian2.Setting(containerEl).addToggle((t) => t.setValue(mapping.enabled).onChange(async (v) => {
       mapping.enabled = v;
       await this.plugin.saveSettings();
@@ -175,7 +182,23 @@ var SettingsTab = class extends import_obsidian2.PluginSettingTab {
         this.debouncedSave();
       });
       t.inputEl.setCssProps({ "flex": "1", "width": "100%" });
-    }).addExtraButton((b) => b.setIcon("trash").setTooltip("Delete mapping").onClick(async () => {
+    });
+    if (useProperties) {
+      s.addText((t) => {
+        t.setPlaceholder("Key").setValue(mapping.propertyKey || "").onChange((v) => {
+          mapping.propertyKey = v;
+          this.debouncedSave();
+        });
+        t.inputEl.setCssProps({ "flex": "0.6", "width": "100%" });
+      }).addText((t) => {
+        t.setPlaceholder("Value").setValue(mapping.propertyValue || "").onChange((v) => {
+          mapping.propertyValue = v;
+          this.debouncedSave();
+        });
+        t.inputEl.setCssProps({ "flex": "0.6", "width": "100%" });
+      });
+    }
+    s.addExtraButton((b) => b.setIcon("trash").setTooltip("Delete mapping").onClick(async () => {
       this.plugin.settings.triggerTemplates.splice(index, 1);
       await this.plugin.saveSettings();
       this.display();
@@ -271,7 +294,7 @@ var TemplaterHandler = class {
   /**
    * Creates a new note from a template.
    */
-  async createNoteFromTemplate(templateFile, folderPath, fileName) {
+  async createNoteFromTemplate(templateFile, folderPath, fileName, propertyKey, propertyValue) {
     const api = this.getApi();
     const sanitizedFolder = sanitizeFolderPath(folderPath);
     const newNotePath = (0, import_obsidian3.normalizePath)(sanitizedFolder ? `${sanitizedFolder}/${fileName}.md` : `${fileName}.md`);
@@ -286,6 +309,15 @@ var TemplaterHandler = class {
     } catch (error) {
       console.warn(`Objects: Failed to create file at "${newNotePath}":`, error);
       return null;
+    }
+    if (newFile && propertyKey && propertyValue) {
+      try {
+        await this.app.fileManager.processFrontMatter(newFile, (frontmatter) => {
+          frontmatter[propertyKey] = propertyValue;
+        });
+      } catch (e) {
+        console.warn("Objects: Failed to add frontmatter properties:", e);
+      }
     }
     if (api && newFile) {
       try {
@@ -323,15 +355,15 @@ var TitleModal = class extends import_obsidian4.Modal {
   /**
    * @param app Obsidian App instance
    * @param plugin Reference to the main plugin
-   * @param targetFolder Target folder for file search/creation
+   * @param mapping The trigger mapping being used
    * @param onSubmit Callback function on successful input
    */
-  constructor(app, plugin, targetFolder, onSubmit) {
+  constructor(app, plugin, mapping, onSubmit) {
     super(app);
     this.result = "";
     this.isClosed = false;
     this.plugin = plugin;
-    this.targetFolder = targetFolder;
+    this.mapping = mapping;
     this.onSubmit = onSubmit;
   }
   /**
@@ -358,7 +390,7 @@ var TitleModal = class extends import_obsidian4.Modal {
     textComponent.onChange((value) => {
       this.result = value;
     });
-    new FileSuggest(this.app, inputEl, this.plugin, this.targetFolder);
+    new FileSuggest(this.app, inputEl, this.plugin, this.mapping);
     inputEl.addEventListener("keydown", (e) => {
       if (e.key === "Enter") {
         setTimeout(() => this.submit(), 100);
@@ -399,11 +431,11 @@ var TitleModal = class extends import_obsidian4.Modal {
   }
 };
 var FileSuggest = class extends import_obsidian4.AbstractInputSuggest {
-  constructor(app, inputEl, plugin, targetFolder) {
+  constructor(app, inputEl, plugin, mapping) {
     super(app, inputEl);
     this.inputEl = inputEl;
     this.plugin = plugin;
-    this.targetFolder = targetFolder;
+    this.mapping = mapping;
   }
   /**
    * Filters all markdown files based on the target folder and query.
@@ -411,12 +443,25 @@ var FileSuggest = class extends import_obsidian4.AbstractInputSuggest {
   getSuggestions(query) {
     const lowerCaseQuery = query.toLowerCase();
     const files = this.app.vault.getMarkdownFiles();
-    const normalizedTarget = sanitizeFolderPath(this.targetFolder);
+    const folder = this.mapping.outputPath || this.plugin.settings.defaultOutputPath;
+    const normalizedTarget = sanitizeFolderPath(folder);
+    const { propertyKey, propertyValue } = this.mapping;
+    const useProperties = this.plugin.settings.useProperties;
     return files.filter((file) => {
-      const folderPath = file.parent ? sanitizeFolderPath(file.parent.path) : "";
-      const isInFolder = normalizedTarget === "" || folderPath === normalizedTarget;
+      if (normalizedTarget !== "") {
+        const folderPath = file.parent ? sanitizeFolderPath(file.parent.path) : "";
+        if (folderPath !== normalizedTarget)
+          return false;
+      }
+      if (useProperties && propertyKey && propertyValue) {
+        const cache = this.app.metadataCache.getFileCache(file);
+        const frontmatter = cache == null ? void 0 : cache.frontmatter;
+        if (!frontmatter || frontmatter[propertyKey] !== propertyValue) {
+          return false;
+        }
+      }
       const matchesQuery = file.basename.toLowerCase().includes(lowerCaseQuery);
-      return isInFolder && matchesQuery;
+      return matchesQuery;
     }).slice(0, 10);
   }
   renderSuggestion(file, el) {
@@ -482,9 +527,7 @@ var TriggerSuggest = class extends import_obsidian5.EditorSuggest {
     const context = this.context;
     if (!context)
       return;
-    const folder = suggestion.outputPath || this.plugin.settings.defaultOutputPath;
-    const targetFolder = sanitizeFolderPath(folder);
-    new TitleModal(this.app, this.plugin, targetFolder, (title) => {
+    new TitleModal(this.app, this.plugin, suggestion, (title) => {
       void this.handleNoteCreation(suggestion, title, context);
     }).open();
   }
@@ -512,10 +555,13 @@ var TriggerSuggest = class extends import_obsidian5.EditorSuggest {
       if (targetFolder && !this.app.vault.getAbstractFileByPath(targetFolder)) {
         await this.app.vault.createFolder(targetFolder);
       }
+      const useProperties = this.plugin.settings.useProperties;
       const newFile = await this.plugin.templater.createNoteFromTemplate(
         templateFile,
         targetFolder,
-        sanitizedTitle
+        sanitizedTitle,
+        useProperties ? suggestion.propertyKey : void 0,
+        useProperties ? suggestion.propertyValue : void 0
       );
       if (newFile) {
         this.insertLinkAndFocus(editor, newFile, sourcePath, title, context);

@@ -1,5 +1,6 @@
 import { App, Modal, TextComponent, TFile, AbstractInputSuggest } from 'obsidian';
 import ObjectsPlugin from './main';
+import { TriggerTemplateMapping } from './types';
 import { sanitizeFolderPath } from './utils';
 
 /**
@@ -8,20 +9,20 @@ import { sanitizeFolderPath } from './utils';
 export class TitleModal extends Modal {
     private result: string = "";
     private onSubmit: (result: string) => void;
-    private targetFolder: string;
+    private mapping: TriggerTemplateMapping;
     private plugin: ObjectsPlugin;
     private isClosed: boolean = false;
 
     /**
      * @param app Obsidian App instance
      * @param plugin Reference to the main plugin
-     * @param targetFolder Target folder for file search/creation
+     * @param mapping The trigger mapping being used
      * @param onSubmit Callback function on successful input
      */
-    constructor(app: App, plugin: ObjectsPlugin, targetFolder: string, onSubmit: (result: string) => void) {
+    constructor(app: App, plugin: ObjectsPlugin, mapping: TriggerTemplateMapping, onSubmit: (result: string) => void) {
         super(app);
         this.plugin = plugin;
-        this.targetFolder = targetFolder;
+        this.mapping = mapping;
         this.onSubmit = onSubmit;
     }
 
@@ -58,7 +59,7 @@ export class TitleModal extends Modal {
         });
 
         // Add autocompletion for existing files
-        new FileSuggest(this.app, inputEl, this.plugin, this.targetFolder);
+        new FileSuggest(this.app, inputEl, this.plugin, this.mapping);
 
         // Allow submission via Enter key
         inputEl.addEventListener('keydown', (e) => {
@@ -119,7 +120,7 @@ class FileSuggest extends AbstractInputSuggest<TFile> {
         app: App, 
         private inputEl: HTMLInputElement, 
         private plugin: ObjectsPlugin, 
-        private targetFolder: string
+        private mapping: TriggerTemplateMapping
     ) {
         super(app, inputEl);
     }
@@ -130,14 +131,31 @@ class FileSuggest extends AbstractInputSuggest<TFile> {
     getSuggestions(query: string): TFile[] {
         const lowerCaseQuery = query.toLowerCase();
         const files = this.app.vault.getMarkdownFiles();
-        const normalizedTarget = sanitizeFolderPath(this.targetFolder);
+        
+        const folder = this.mapping.outputPath || this.plugin.settings.defaultOutputPath;
+        const normalizedTarget = sanitizeFolderPath(folder);
+        const { propertyKey, propertyValue } = this.mapping;
+        const useProperties = this.plugin.settings.useProperties;
 
         return files.filter(file => {
-            const folderPath = file.parent ? sanitizeFolderPath(file.parent.path) : '';
-            // Check if file is in target folder or if no target folder (Vault Root) is defined
-            const isInFolder = normalizedTarget === '' || folderPath === normalizedTarget;
+            // 1. Filter by folder if defined
+            if (normalizedTarget !== '') {
+                const folderPath = file.parent ? sanitizeFolderPath(file.parent.path) : '';
+                if (folderPath !== normalizedTarget) return false;
+            }
+
+            // 2. Filter by property if defined AND feature is enabled
+            if (useProperties && propertyKey && propertyValue) {
+                const cache = this.app.metadataCache.getFileCache(file);
+                const frontmatter = cache?.frontmatter;
+                if (!frontmatter || frontmatter[propertyKey] !== propertyValue) {
+                    return false;
+                }
+            }
+
+            // 3. Filter by query
             const matchesQuery = file.basename.toLowerCase().includes(lowerCaseQuery);
-            return isInFolder && matchesQuery;
+            return matchesQuery;
         }).slice(0, 10); // Limit to 10 suggestions
     }
 
