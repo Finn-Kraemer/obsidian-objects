@@ -4,25 +4,11 @@
     "type": "split",
     "children": [
       {
-        "id": "07451eec4f086867",
+        "id": "a7dccfa41b733188",
         "type": "tabs",
         "children": [
           {
-            "id": "0de9cae30691076a",
-            "type": "leaf",
-            "state": {
-              "type": "markdown",
-              "state": {
-                "file": "Example.md",
-                "mode": "source",
-                "source": false
-              },
-              "icon": "lucide-file",
-              "title": "Example"
-            }
-          },
-          {
-            "id": "d041807b784ddc7e",
+            "id": "b6a934fa9dda7a4b",
             "type": "leaf",
             "state": {
               "type": "markdown",
@@ -35,8 +21,7 @@
               "title": "Example"
             }
           }
-        ],
-        "currentTab": 1
+        ]
       }
     ],
     "direction": "vertical"
@@ -180,7 +165,8 @@
               "title": "Outline of Welcome"
             }
           }
-        ]
+        ],
+        "currentTab": 3
       }
     ],
     "direction": "horizontal",
@@ -198,41 +184,42 @@
       "bases:Create new base": false
     }
   },
-  "active": "d041807b784ddc7e",
+  "active": "b6a934fa9dda7a4b",
   "lastOpenFiles": [
-    "accounting.beancount",
-    "Dashboard.md",
-    "Example.md",
     "Welcome.md",
-    "Untitled.md",
+    "Books/John Doe's Biografie.md",
+    "Books/Books.base",
+    "Inbox/Notes/Notes.base",
+    "People/People.base",
     "People/Max Mustermann.md",
+    "People/John Doe.md",
+    "Projects/Spring Boot 3 Backend.md",
+    "Projects/Projects.base",
+    "Projects/Object-Oriented PKM System.md",
+    "Projects/Deep Work Initiative.md",
+    "Dashboard.md",
+    "Zettelkasten/AtomicNotes.base",
+    "Example.md",
+    "linda.md",
+    "test.md",
+    "lala.md",
+    "et.md",
+    "tom.md",
+    "finn.md",
     "Templates/atomic.md",
+    "accounting.beancount",
+    "Untitled.md",
     "Books/Super DUper Secret Project.md",
     "Templates/book.md",
     "Meeting.md",
     "Templates/person.md",
     "People/Thomas.md",
-    "Inbox/Notes/Notes.base",
     "Templates/note.md",
     "Templates/project.md",
-    "People/John Doe.md",
-    "People/People.base",
     "Zettelkasten/notiz.md",
     "Invalid date.md",
-    "Projects/Spring Boot 3 Backend.md",
-    "Books/Books.base",
-    "Books/buch.md",
-    "Inbox/Notes/test.md",
     "Inbox/Notes",
-    "Books/John Doe's Biografie.md",
     "Books",
-    "Zettelkasten/AtomicNotes.base",
-    "Projects/Projects.base",
-    "Projects/Object-Oriented PKM System.md",
-    "Projects/code.md",
-    "Book/Faust.md",
-    "Book",
-    "People/Thomas Gast.md",
-    "Zettelkasten/Exlegionär.md"
+    "Book"
   ]
 }

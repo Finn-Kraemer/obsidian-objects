@@ -27,7 +27,7 @@ export class TriggerSuggest extends EditorSuggest<TriggerTemplateMapping> {
 
     /**
      * Checks if the suggester should be triggered at the current cursor position.
-     * Trigger: Symbol at the start of a line or after a space/punctuation.
+     * Trigger: '@' at the start of a line or after a space.
      */
     onTrigger(cursor: EditorPosition, editor: Editor): EditorSuggestTriggerInfo | null {
         const line = editor.getLine(cursor.line).substring(0, cursor.ch);
@@ -35,23 +35,23 @@ export class TriggerSuggest extends EditorSuggest<TriggerTemplateMapping> {
         
         // Escape the symbol for use in a regular expression
         const escapedSymbol = symbol.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+        // Match the symbol and any non-whitespace characters following it at the end of the line
+        const regex = new RegExp(`${escapedSymbol}([^\\s]*)$`);
         
-        /**
-         * The regex looks for:
-         * 1. (?:^|[\s.,!?;:]) - Boundary: Start of line OR space OR common punctuation
-         * 2. (${escapedSymbol}(\w*)) - The trigger and the query (captured in group 1 and 2)
-         * 3. $ - End of the substring (at the cursor)
-         */
-        const regex = new RegExp(`(?:^|[\\s.,!?;:])(${escapedSymbol}(\\w*))$`);
-        const match = line.match(regex);
-
+        const match = regex.exec(line);
         if (!match) return null;
 
-        const fullTriggerMatch = match[1]; // e.g. "@project"
-        const query = match[2];           // e.g. "project"
+        const query = match[1];
+        // Calculate the absolute start position of the trigger
+        const triggerStart = line.length - match[0].length;
         
-        // Calculate the exact start character position
-        const triggerStart = cursor.ch - fullTriggerMatch.length;
+        // If not at the start of the line, ensure it's not preceded by a word character (to avoid triggering mid-word like in emails)
+        if (triggerStart > 0) {
+            const charBefore = line.charAt(triggerStart - 1);
+            if (/\w/.test(charBefore)) {
+                return null;
+            }
+        }
 
         return {
             start: { line: cursor.line, ch: triggerStart },
