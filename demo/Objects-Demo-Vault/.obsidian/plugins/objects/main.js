@@ -443,14 +443,17 @@ var TriggerSuggest = class extends import_obsidian5.EditorSuggest {
     const line = editor.getLine(cursor.line).substring(0, cursor.ch);
     const symbol = this.plugin.settings.triggerSymbol;
     const escapedSymbol = symbol.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
-    const regex = new RegExp(`${escapedSymbol}(\\w*)$`);
+    const regex = new RegExp(`${escapedSymbol}([^\\s]*)$`);
     const match = regex.exec(line);
     if (!match)
       return null;
     const query = match[1];
-    const triggerStart = line.lastIndexOf(symbol);
-    if (triggerStart > 0 && line.charAt(triggerStart - 1) !== " ") {
-      return null;
+    const triggerStart = line.length - match[0].length;
+    if (triggerStart > 0) {
+      const charBefore = line.charAt(triggerStart - 1);
+      if (/\w/.test(charBefore)) {
+        return null;
+      }
     }
     return {
       start: { line: cursor.line, ch: triggerStart },

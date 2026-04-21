@@ -5,4 +5,4 @@ Created: 2026-04-16 09:17
 - [ ] First goal
 
 ## Notes
-<% tp.file.cursor(0) %>
+

@@ -35,17 +35,22 @@ export class TriggerSuggest extends EditorSuggest<TriggerTemplateMapping> {
         
         // Escape the symbol for use in a regular expression
         const escapedSymbol = symbol.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-        const regex = new RegExp(`${escapedSymbol}(\\w*)$`);
+        // Match the symbol and any non-whitespace characters following it at the end of the line
+        const regex = new RegExp(`${escapedSymbol}([^\\s]*)$`);
         
         const match = regex.exec(line);
         if (!match) return null;
 
         const query = match[1];
-        const triggerStart = line.lastIndexOf(symbol);
+        // Calculate the absolute start position of the trigger
+        const triggerStart = line.length - match[0].length;
         
-        // Ensure there is a space before the trigger symbol or it's at the start of the line
-        if (triggerStart > 0 && line.charAt(triggerStart - 1) !== ' ') {
-            return null;
+        // If not at the start of the line, ensure it's not preceded by a word character (to avoid triggering mid-word like in emails)
+        if (triggerStart > 0) {
+            const charBefore = line.charAt(triggerStart - 1);
+            if (/\w/.test(charBefore)) {
+                return null;
+            }
         }
 
         return {
