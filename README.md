@@ -1,6 +1,6 @@
-# 💎 Objects
+# Objects
 
-> **Rethink your notes as objects.** Create structured, perfectly organized notes directly in your flow using simple `@-triggers`.
+> **Rethink your notes as objects.** Create structured, perfectly organized notes directly in your flow using simple triggers.
 
 [![Obsidian Version](https://img.shields.io/badge/Obsidian-v1.5.0+-8a2be2?logo=obsidian)](https://obsidian.md)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
@@ -11,7 +11,7 @@
 
 This plugin was built for a specific kind of note-taker: **The Obsidian Lover who misses Objects.**
 
-If you've experimented with apps like **Anytype** or **Capacities** because you loved their object-oriented approach, but ultimately found yourself returning to the power, privacy, and flexibility of **Obsidian**, then this is for you. ❤️
+If you've experimented with apps like **Anytype** or **Capacities** because you loved their object-oriented approach, but ultimately found yourself returning to the power, privacy, and flexibility of **Obsidian**, then this is for you.
 
 **Objects** brings that missing piece to your vault. No more manual folder navigation or messy template applications—just pure, structured creation without leaving your keyboard.
 
@@ -28,6 +28,8 @@ If you've experimented with apps like **Anytype** or **Capacities** because you 
 - **Smart Routing**: Notes are automatically moved to their designated folders based on their type.
 - **Dynamic Content**: Uses a powerful fallback system (`{{title}}`, `{{date}}`, `{{time}}`) or integrates natively with [Templater](https://github.com/SilentVoid13/Templater).
 - **Intelligent Linking**: If an object already exists, the plugin links to it instead of creating a duplicate.
+- **Property Management**: Automatically add frontmatter properties (e.g., `type: project`) to newly created notes.
+- **Archive Awareness**: Define tags or properties to mark notes as archived, excluding them from your active suggestion flow.
 
 ---
 
@@ -37,19 +39,19 @@ If you've experimented with apps like **Anytype** or **Capacities** because you 
   <figure>
     <img src="assets/settings.png" alt="Settings Page" width="600" />
     <br/>
-    <figcaption><i>1. Configure custom triggers and mappings</i></figcaption>
+    <figcaption><i>1. Configure custom triggers, mappings, and property keys</i></figcaption>
   </figure>
   <br/>
   <figure>
     <img src="assets/select_objects.png" alt="Select Object Suggestion" width="600" />
     <br/>
-    <figcaption><i>2. Trigger with @ and select your object type</i></figcaption>
+    <figcaption><i>2. Trigger with your custom symbol and select your object type</i></figcaption>
   </figure>
   <br/>
   <figure>
     <img src="assets/create_object.png" alt="Enter Title Modal" width="600" />
     <br/>
-    <figcaption><i>3. Enter the name of your new object</i></figcaption>
+    <figcaption><i>3. Enter the name—intelligent autocompletion suggests existing notes</i></figcaption>
   </figure>
 </div>
 
@@ -73,12 +75,12 @@ The demo vault is pre-configured with sample templates, folders, and triggers to
 
 1.  **Trigger**: Type `@` (or your custom symbol) followed by the object type (e.g., `@project`) anywhere in your editor.
 2.  **Identify**: A suggestion list appears—select your desired object.
-3.  **Name**: A modal pops up. Type the name of your new object (e.g., "Deep Work Initiative").
+3.  **Name**: A modal pops up. Type the name of your new object (e.g., "Deep Work Initiative"). The modal will suggest existing notes based on your folder and property mappings.
 4.  **Confirm**: Hit `Enter`.
-5.  **Result**: A clean markdown link is inserted at your cursor, and the new note is instantly created in the background using your specified template.
+5.  **Result**: A clean markdown link is inserted at your cursor. The note is created or linked in the background using your specified template and properties.
 
 > [!TIP]
-> **Trigger Conflicts**: If the `@` symbol is already being used by other plugins (like *Mention* or *Calendar*), you can easily change the **Trigger symbol** in the plugin settings to something else, like `#` or `!`.
+> **Trigger Conflicts**: If the `@` symbol is already being used by other plugins (like *Mention* or *Calendar*), you can easily change the **Trigger symbol** in the plugin settings to something else, like `#` or `!`. Existing mappings will update automatically.
 
 ---
 
@@ -88,11 +90,13 @@ Customize **Objects** to fit your personal knowledge management system:
 
 | Setting | Description |
 | :--- | :--- |
-| **Path Configuration** | Set your global `Template Folder` and a `Default Output Path` for unassigned triggers. |
-| **Trigger Mappings** | Map any `@trigger` (e.g., `@idea`) to a specific template and target folder. |
+| **Trigger symbol** | Character that triggers the suggester (e.g. @, #, or !). |
+| **Core Configuration** | Set your global `Template Folder` and a `Default Output Path` for unassigned triggers. |
+| **Behavioral Toggle** | Enable `Open created note` to automatically open new notes in a new tab. |
+| **Property Support** | Enable `Use file properties` to add and filter by frontmatter keys and values. |
+| **Archive Behavior** | Define tags (e.g. `#archived`) or properties to exclude notes from suggestions. |
+| **Trigger Mappings** | Map triggers to specific templates, folders, and properties. |
 | **Status Check** | Real-time validation of your Templater integration. |
-
-> **Note**: For full Templater syntax support, ensure **"Trigger Templater on new file creation"** is enabled in the Templater settings.
 
 ---
 
@@ -128,6 +132,6 @@ Objects is primarily designed for **Desktop** environments to maximize productiv
 
 ---
 
-## 📄 License
+## License
 
 This project is licensed under the **MIT License**. See the [LICENSE](./LICENSE) file for details.
