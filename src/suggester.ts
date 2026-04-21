@@ -83,10 +83,7 @@ export class TriggerSuggest extends EditorSuggest<TriggerTemplateMapping> {
         const context = this.context;
         if (!context) return;
 
-        const folder = suggestion.outputPath || this.plugin.settings.defaultOutputPath;
-        const targetFolder = sanitizeFolderPath(folder);
-
-        new TitleModal(this.app, this.plugin, targetFolder, (title) => {
+        new TitleModal(this.app, this.plugin, suggestion, (title) => {
             void this.handleNoteCreation(suggestion, title, context);
         }).open();
     }
@@ -128,10 +125,13 @@ export class TriggerSuggest extends EditorSuggest<TriggerTemplateMapping> {
             }
 
             // 4. Create and link via TemplaterHandler
+            const useProperties = this.plugin.settings.useProperties;
             const newFile = await this.plugin.templater.createNoteFromTemplate(
                 templateFile, 
                 targetFolder, 
-                sanitizedTitle
+                sanitizedTitle,
+                useProperties ? suggestion.propertyKey : undefined,
+                useProperties ? suggestion.propertyValue : undefined
             );
             
             if (newFile) {

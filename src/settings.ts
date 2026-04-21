@@ -113,6 +113,17 @@ export class SettingsTab extends PluginSettingTab {
                 }));
 
         new Setting(containerEl)
+            .setName('Use file properties')
+            .setDesc('Whether to allow defining and filtering by frontmatter properties (e.g. type: person)')
+            .addToggle(toggle => toggle
+                .setValue(this.plugin.settings.useProperties)
+                .onChange(async v => {
+                    this.plugin.settings.useProperties = v;
+                    await this.plugin.saveSettings();
+                    this.display(); // Refresh to show/hide property fields
+                }));
+
+        new Setting(containerEl)
             .setName('Open created note')
             .setDesc('Whether to automatically open the newly created note in a new tab')
             .addToggle(toggle => toggle
@@ -152,6 +163,7 @@ export class SettingsTab extends PluginSettingTab {
      */
     private renderMappingRow(containerEl: HTMLElement, mapping: TriggerTemplateMapping, index: number) {
         const symbol = this.plugin.settings.triggerSymbol;
+        const useProperties = this.plugin.settings.useProperties;
         
         const s = new Setting(containerEl)
             .addToggle(t => t
@@ -189,8 +201,30 @@ export class SettingsTab extends PluginSettingTab {
                         this.debouncedSave();
                     });
                 t.inputEl.setCssProps({ 'flex': '1', 'width': '100%' });
+            });
+
+        if (useProperties) {
+            s.addText(t => {
+                t.setPlaceholder('Key')
+                    .setValue(mapping.propertyKey || '')
+                    .onChange(v => {
+                        mapping.propertyKey = v;
+                        this.debouncedSave();
+                    });
+                t.inputEl.setCssProps({ 'flex': '0.6', 'width': '100%' });
             })
-            .addExtraButton(b => b
+            .addText(t => {
+                t.setPlaceholder('Value')
+                    .setValue(mapping.propertyValue || '')
+                    .onChange(v => {
+                        mapping.propertyValue = v;
+                        this.debouncedSave();
+                    });
+                t.inputEl.setCssProps({ 'flex': '0.6', 'width': '100%' });
+            });
+        }
+
+        s.addExtraButton(b => b
                 .setIcon('trash')
                 .setTooltip('Delete mapping')
                 .onClick(async () => {
