@@ -7,7 +7,12 @@
     "dev": "node esbuild.config.mjs",
     "build": "tsc -noEmit -skipLibCheck && node esbuild.config.mjs production",
     "lint": "eslint src/**",
-    "version": "node version-bump.mjs && git add manifest.json versions.json release/manifest.json"
+    "preversion": "npm run build && npm run lint",
+    "version": "node version-bump.mjs && git add manifest.json versions.json release/manifest.json release/main.js",
+    "release:patch": "npm version patch && git push --follow-tags",
+    "release:minor": "npm version minor && git push --follow-tags",
+    "release:major": "npm version major && git push --follow-tags",
+    "release:bug": "npm version patch && git push --follow-tags"
   },
   "keywords": [],
   "author": "Finn-Kraemer",
