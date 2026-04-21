@@ -40,7 +40,7 @@ var DEFAULT_SETTINGS = {
   ],
   defaultOutputPath: "",
   openNewNote: true,
-  useProperties: false,
+  useProperties: true,
   archiveTag: "",
   archivePropertyKey: "",
   archivePropertyValue: ""
