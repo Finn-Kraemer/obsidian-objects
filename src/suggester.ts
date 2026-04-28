@@ -153,19 +153,22 @@ export class TriggerSuggest extends EditorSuggest<TriggerTemplateMapping> {
     }
 
     /**
-     * Looks for a file. First exactly in the target path, then via MetadataCache in the entire vault.
+     * Looks for a file. First exactly in the target path; only falls back to a vault-wide
+     * lookup when no target folder is configured. With a target folder set, a vault-wide
+     * fallback could match a homonymous note in an unrelated folder and link to the wrong one.
      */
     private findExistingFile(title: string, suggestion: TriggerTemplateMapping): TFile | null {
         const folder = suggestion.outputPath || this.plugin.settings.defaultOutputPath;
         const targetFolder = sanitizeFolderPath(folder);
         const specificPath = normalizePath(targetFolder ? `${targetFolder}/${title}.md` : `${title}.md`);
 
-        // Check exact path first
         const fileAtTable = this.app.vault.getAbstractFileByPath(specificPath);
         if (fileAtTable instanceof TFile) return fileAtTable;
 
-        // Fallback: search anywhere in the vault via first link match
-        return this.app.metadataCache.getFirstLinkpathDest(title, "");
+        if (!targetFolder) {
+            return this.app.metadataCache.getFirstLinkpathDest(title, "");
+        }
+        return null;
     }
 
     /**
