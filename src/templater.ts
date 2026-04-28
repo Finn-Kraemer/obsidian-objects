@@ -28,37 +28,56 @@ export class TemplaterHandler {
 
     /**
      * Creates a new note from a template.
+     *
+     * When Templater is available and a template is provided, delegates to its
+     * create_new_note_from_template API. This guarantees that <% %> tags are
+     * processed regardless of the user's "Trigger Templater on new file creation"
+     * setting. Otherwise falls back to manual creation with the basic
+     * {{title}} / {{date}} / {{time}} placeholders.
      */
     async createNoteFromTemplate(
-        templateFile: TFile | null, 
-        folderPath: string, 
+        templateFile: TFile | null,
+        folderPath: string,
         fileName: string,
         propertyKey?: string,
         propertyValue?: string
     ): Promise<TFile | null> {
         const api = this.getApi();
         const sanitizedFolder = sanitizeFolderPath(folderPath);
-        const newNotePath = normalizePath(sanitizedFolder ? `${sanitizedFolder}/${fileName}.md` : `${fileName}.md`);
+        let newFile: TFile | null = null;
 
-        // 1. Get content from template or use empty string
-        let content = "";
-        if (templateFile) {
-            content = await this.app.vault.read(templateFile);
+        // Path A: Templater + template -> delegate so <% %> is always expanded.
+        // open_new_note=false because the suggester opens the file itself.
+        if (api && templateFile) {
+            try {
+                newFile = await api.create_new_note_from_template(
+                    templateFile,
+                    sanitizedFolder,
+                    fileName,
+                    false
+                );
+            } catch (e) {
+                console.warn('Objects: Templater API failed, falling back to manual creation:', e);
+                newFile = null;
+            }
         }
 
-        // 2. Always replace our own placeholders first
-        content = this.replacePlaceholders(content, fileName);
-
-        // 3. Create the file
-        let newFile: TFile;
-        try {
-            newFile = await this.app.vault.create(newNotePath, content);
-        } catch (error) {
-            console.warn(`Objects: Failed to create file at "${newNotePath}":`, error);
-            return null;
+        // Path B: fallback (no Templater, no template, or Templater threw).
+        if (!newFile) {
+            const newNotePath = normalizePath(sanitizedFolder ? `${sanitizedFolder}/${fileName}.md` : `${fileName}.md`);
+            let content = "";
+            if (templateFile) {
+                content = await this.app.vault.read(templateFile);
+            }
+            content = this.replacePlaceholders(content, fileName);
+            try {
+                newFile = await this.app.vault.create(newNotePath, content);
+            } catch (error) {
+                console.warn(`Objects: Failed to create file at "${newNotePath}":`, error);
+                return null;
+            }
         }
 
-        // 4. Add frontmatter properties if defined
         if (newFile && propertyKey && propertyValue) {
             try {
                 await this.app.fileManager.processFrontMatter(newFile, (frontmatter) => {
@@ -66,17 +85,6 @@ export class TemplaterHandler {
                 });
             } catch (e) {
                 console.warn("Objects: Failed to add frontmatter properties:", e);
-            }
-        }
-
-        // 5. If Templater is active, let it process the file for its own tags (<% ... %>)
-        if (api && newFile) {
-            try {
-                // We use the already created file and return it.
-                // If the user has Templater "Trigger on new file" enabled, 
-                // it will run automatically anyway.
-            } catch (e) {
-                console.warn("Objects: Templater post-processing failed:", e);
             }
         }
 

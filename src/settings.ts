@@ -38,8 +38,8 @@ export class SettingsTab extends PluginSettingTab {
         const isTemplaterActive = !!this.plugin.templater.getApi();
         new Setting(containerEl)
             .setName('Integration status')
-            .setDesc(isTemplaterActive 
-                ? 'Templater integration is active. Note: Ensure "Trigger Templater on new file creation" is enabled in Templater settings for full syntax support' 
+            .setDesc(isTemplaterActive
+                ? 'Templater integration is active. Templater syntax (<% ... %>) is processed via the Templater API for every note Objects creates.'
                 : 'Templater plugin was not detected')
             .then(s => {
                 const statusText = isTemplaterActive ? 'Integration active' : 'Integration missing';
