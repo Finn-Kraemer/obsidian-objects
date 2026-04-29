@@ -222,7 +222,7 @@ var SettingsTab = class extends import_obsidian2.PluginSettingTab {
       "border-top": "1px solid var(--background-modifier-border)",
       "margin-top": "5px"
     });
-    new import_obsidian2.Setting(contentEl).setName("Type").setDesc("Select whether this trigger inserts a template or executes a command.").addDropdown((dropdown) => dropdown.addOption("template", "Template").addOption("command", "Obsidian Command").setValue(mapping.type || "template").onChange(async (value) => {
+    new import_obsidian2.Setting(contentEl).setName("Type").setDesc("Select whether this trigger inserts a template or executes a command.").addDropdown((dropdown) => dropdown.addOption("template", "Template").addOption("command", "Obsidian command").setValue(mapping.type || "template").onChange(async (value) => {
       mapping.type = value;
       await this.plugin.saveSettings();
       this.display();
@@ -236,7 +236,7 @@ var SettingsTab = class extends import_obsidian2.PluginSettingTab {
     if (mapping.type === "command") {
       new import_obsidian2.Setting(contentEl).setName("Command").setDesc("The Obsidian command to execute.").addText((t) => {
         new CommandSuggest(this.app, t.inputEl);
-        t.setPlaceholder("Search command...").setValue(mapping.commandName || "").onChange((v) => {
+        t.setPlaceholder("Search command...").setValue(mapping.commandName || "").onChange(() => {
           this.debouncedSave();
         });
         t.inputEl.addEventListener("command-selected", (e) => {
