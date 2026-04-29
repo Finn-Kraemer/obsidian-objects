@@ -15,7 +15,7 @@ If you've experimented with apps like **Anytype** or **Capacities** because you 
 
 **Objects** brings that missing piece to your vault. No more manual folder navigation or messy template applications—just pure, structured creation without leaving your keyboard.
 <div align="center">
-<video src="./assets/Example.mp4" controls autoplay muted loop width="40%">
+<video src="https://github.com/user-attachments/assets/261c16f6-22b5-4897-aea9-f81572ea129b" controls autoplay muted loop width="40%">
 </video>
 </div>
 
