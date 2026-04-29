@@ -88,7 +88,7 @@ var SettingsTab = class extends import_obsidian2.PluginSettingTab {
    */
   renderStatus(containerEl) {
     const isTemplaterActive = !!this.plugin.templater.getApi();
-    new import_obsidian2.Setting(containerEl).setName("Integration status").setDesc(isTemplaterActive ? 'Templater integration is active. Note: Ensure "Trigger Templater on new file creation" is enabled in Templater settings for full syntax support' : "Templater plugin was not detected").then((s) => {
+    new import_obsidian2.Setting(containerEl).setName("Integration status").setDesc(isTemplaterActive ? "Templater integration is active. Templater syntax (<% ... %>) is processed via the Templater API for every note Objects creates." : "Templater plugin was not detected").then((s) => {
       const statusText = isTemplaterActive ? "Integration active" : "Integration missing";
       const status = s.controlEl.createSpan({
         cls: "objects-status-indicator",
@@ -335,22 +335,43 @@ var TemplaterHandler = class {
   }
   /**
    * Creates a new note from a template.
+   *
+   * When Templater is available and a template is provided, delegates to its
+   * create_new_note_from_template API. This guarantees that <% %> tags are
+   * processed regardless of the user's "Trigger Templater on new file creation"
+   * setting. Otherwise falls back to manual creation with the basic
+   * {{title}} / {{date}} / {{time}} placeholders.
    */
   async createNoteFromTemplate(templateFile, folderPath, fileName, propertyKey, propertyValue) {
     const api = this.getApi();
     const sanitizedFolder = sanitizeFolderPath(folderPath);
-    const newNotePath = (0, import_obsidian3.normalizePath)(sanitizedFolder ? `${sanitizedFolder}/${fileName}.md` : `${fileName}.md`);
-    let content = "";
-    if (templateFile) {
-      content = await this.app.vault.read(templateFile);
+    let newFile = null;
+    if (api && templateFile) {
+      try {
+        newFile = await api.create_new_note_from_template(
+          templateFile,
+          sanitizedFolder,
+          fileName,
+          false
+        );
+      } catch (e) {
+        console.warn("Objects: Templater API failed, falling back to manual creation:", e);
+        newFile = null;
+      }
     }
-    content = this.replacePlaceholders(content, fileName);
-    let newFile;
-    try {
-      newFile = await this.app.vault.create(newNotePath, content);
-    } catch (error) {
-      console.warn(`Objects: Failed to create file at "${newNotePath}":`, error);
-      return null;
+    if (!newFile) {
+      const newNotePath = (0, import_obsidian3.normalizePath)(sanitizedFolder ? `${sanitizedFolder}/${fileName}.md` : `${fileName}.md`);
+      let content = "";
+      if (templateFile) {
+        content = await this.app.vault.read(templateFile);
+      }
+      content = this.replacePlaceholders(content, fileName);
+      try {
+        newFile = await this.app.vault.create(newNotePath, content);
+      } catch (error) {
+        console.warn(`Objects: Failed to create file at "${newNotePath}":`, error);
+        return null;
+      }
     }
     if (newFile && propertyKey && propertyValue) {
       try {
@@ -359,12 +380,6 @@ var TemplaterHandler = class {
         });
       } catch (e) {
         console.warn("Objects: Failed to add frontmatter properties:", e);
-      }
-    }
-    if (api && newFile) {
-      try {
-      } catch (e) {
-        console.warn("Objects: Templater post-processing failed:", e);
       }
     }
     return newFile;
@@ -641,7 +656,9 @@ var TriggerSuggest = class extends import_obsidian5.EditorSuggest {
     }
   }
   /**
-   * Looks for a file. First exactly in the target path, then via MetadataCache in the entire vault.
+   * Looks for a file. First exactly in the target path; only falls back to a vault-wide
+   * lookup when no target folder is configured. With a target folder set, a vault-wide
+   * fallback could match a homonymous note in an unrelated folder and link to the wrong one.
    */
   findExistingFile(title, suggestion) {
     const folder = suggestion.outputPath || this.plugin.settings.defaultOutputPath;
@@ -650,7 +667,10 @@ var TriggerSuggest = class extends import_obsidian5.EditorSuggest {
     const fileAtTable = this.app.vault.getAbstractFileByPath(specificPath);
     if (fileAtTable instanceof import_obsidian5.TFile)
       return fileAtTable;
-    return this.app.metadataCache.getFirstLinkpathDest(title, "");
+    if (!targetFolder) {
+      return this.app.metadataCache.getFirstLinkpathDest(title, "");
+    }
+    return null;
   }
   /**
    * Tries to load the configured template as a TFile.
