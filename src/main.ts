@@ -51,7 +51,17 @@ export default class ObjectsPlugin extends Plugin {
      * Loads saved settings and merges them with default values.
      */
     async loadSettings() {
-        this.settings = Object.assign({}, DEFAULT_SETTINGS, await this.loadData());
+        const loadedData = await this.loadData();
+        this.settings = Object.assign({}, DEFAULT_SETTINGS, loadedData);
+
+        // Migration: Ensure all existing mappings have the 'enabled' property (default to true)
+        if (this.settings.triggerTemplates) {
+            this.settings.triggerTemplates.forEach(mapping => {
+                if (mapping.enabled === undefined) {
+                    mapping.enabled = true;
+                }
+            });
+        }
     }
 
     /**

@@ -14,9 +14,10 @@ This plugin was built for a specific kind of note-taker: **The Obsidian Lover wh
 If you've experimented with apps like **Anytype** or **Capacities** because you loved their object-oriented approach, but ultimately found yourself returning to the power, privacy, and flexibility of **Obsidian**, then this is for you.
 
 **Objects** brings that missing piece to your vault. No more manual folder navigation or messy template applications—just pure, structured creation without leaving your keyboard.
-
-<video src="https://github.com/user-attachments/assets/342a00f8-8eba-4456-99da-741379db7548" controls autoplay muted loop width="70%">
+<div align="center">
+<video src="https://github.com/user-attachments/assets/261c16f6-22b5-4897-aea9-f81572ea129b" controls autoplay muted loop width="40%">
 </video>
+</div>
 
 ---
 
@@ -27,8 +28,8 @@ If you've experimented with apps like **Anytype** or **Capacities** because you 
 - **Unified Workflow**: Creation, organization, and linking happen in one single interaction.
 - **Smart Routing**: Notes are automatically moved to their designated folders based on their type.
 - **Dynamic Content**: Uses a powerful fallback system (`{{title}}`, `{{date}}`, `{{time}}`) or integrates natively with [Templater](https://github.com/SilentVoid13/Templater).
-- **Intelligent Linking**: If an object already exists, the plugin links to it instead of creating a duplicate.
-- **Property Management**: Automatically add frontmatter properties (e.g., `type: project`) to newly created notes.
+- **Intelligent Linking**: If an object already exists, the plugin links to it instead of creating a duplicate. The creation modal suggests existing notes in real-time.
+- **Property Management**: Automatically add frontmatter properties (e.g., `type: project`) to newly created notes and filter suggestions by them.
 - **Archive Awareness**: Define tags or properties to mark notes as archived, excluding them from your active suggestion flow.
 
 ---
@@ -37,7 +38,9 @@ If you've experimented with apps like **Anytype** or **Capacities** because you 
 
 <div align="center">
   <figure>
-    <img src="assets/settings.png" alt="Settings Page" width="600" />
+    <img src="assets/settings1.png" alt="Settings Page" width="600" />
+    <br/>
+    <img src="assets/settings2.png" alt="Settings Page" width="600" />
     <br/>
     <figcaption><i>1. Configure custom triggers, mappings, and property keys</i></figcaption>
   </figure>
@@ -73,7 +76,7 @@ The demo vault is pre-configured with sample templates, folders, and triggers to
 
 ## How to use it
 
-1.  **Trigger**: Type `@` (or your custom symbol) followed by the object type (e.g., `@project`) anywhere in your editor.
+1.  **Trigger**: Type your trigger symbol (default `@`) followed by the object type (e.g., `@project`) anywhere in your editor.
 2.  **Identify**: A suggestion list appears—select your desired object.
 3.  **Name**: A modal pops up. Type the name of your new object (e.g., "Deep Work Initiative"). The modal will suggest existing notes based on your folder and property mappings.
 4.  **Confirm**: Hit `Enter`.
@@ -91,39 +94,37 @@ Customize **Objects** to fit your personal knowledge management system:
 | Setting | Description |
 | :--- | :--- |
 | **Trigger symbol** | Character that triggers the suggester (e.g. @, #, or !). |
-| **Core Configuration** | Set your global `Template Folder` and a `Default Output Path` for unassigned triggers. |
+| **Core Configuration** | Set your global `Template Folder` and a `Default Output Path`. |
 | **Behavioral Toggle** | Enable `Open created note` to automatically open new notes in a new tab. |
 | **Property Support** | Enable `Use file properties` to add and filter by frontmatter keys and values. |
 | **Archive Behavior** | Define tags (e.g. `#archived`) or properties to exclude notes from suggestions. |
-| **Trigger Mappings** | Map triggers to specific templates, folders, and properties. |
+| **Trigger Mappings** | Map triggers to specific templates, folders, and properties with an enable/disable toggle. |
 | **Status Check** | Real-time validation of your Templater integration. |
 
 ---
 
 ## Platform Support
 
-Objects is primarily designed for **Desktop** environments to maximize productivity.
+Objects is designed for both **Desktop** and **Mobile** environments.
 
-- **Tested on**: Linux, Android (Mobile)
-- **Untested but likely compatible**: macOS, Windows, iOS
-
-*Feel free to test it on your platform and report any issues!*
+- **Tested on**: Linux, Android (Mobile), iOS (Mobile)
+- **Compatible with**: macOS, Windows
 
 ---
 
 ## Installation
 
-### Via Obsidian (Recommended once released)
+### Via Obsidian
 1. Open **Settings** > **Community Plugins**.
 2. Click **Browse** and search for `Objects`.
 3. Click **Install**, then **Enable**.
 
 ### Via BRAT (For Beta Testing)
-1. Install the [BRAT plugin](https://github.com/TfTHacker/obsidian42-brat) from the Community Plugins store.
+1. Install the [BRAT plugin](https://github.com/TfTHacker/obsidian42-brat).
 2. Open **Settings** > **BRAT**.
 3. Click **Add Beta Plugin**.
-4. Paste the URL of this repository: `https://github.com/Finn-Kraemer/obsidian-objects` or `Finn-Kraemer/obsidian-objects`
-5. Click **Add Plugin** and then enable **Objects** in your Community Plugins settings.
+4. Paste: `Finn-Kraemer/obsidian-objects`
+5. Click **Add Plugin** and enable **Objects**.
 
 ### Manual Installation
 1. Download the `main.js` and `manifest.json` from the [latest release](https://github.com/Finn-Kraemer/obsidian-objects/releases).

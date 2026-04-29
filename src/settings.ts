@@ -73,10 +73,10 @@ export class SettingsTab extends PluginSettingTab {
                 .onChange(async v => {
                     const oldSymbol = this.plugin.settings.triggerSymbol;
                     const newSymbol = v.trim() || '@';
-                    
+
                     if (oldSymbol !== newSymbol) {
                         this.plugin.settings.triggerSymbol = newSymbol;
-                        
+
                         // Update all existing triggers with the new symbol
                         this.plugin.settings.triggerTemplates.forEach(t => {
                             if (t.trigger.startsWith(oldSymbol)) {
@@ -85,7 +85,7 @@ export class SettingsTab extends PluginSettingTab {
                                 t.trigger = newSymbol + t.trigger;
                             }
                         });
-                        
+
                         await this.plugin.saveSettings();
                         this.display(); // Refresh to show updated triggers in the list
                     }
@@ -97,9 +97,9 @@ export class SettingsTab extends PluginSettingTab {
             .addText(text => text
                 .setPlaceholder('Templates')
                 .setValue(this.plugin.settings.templateFolder)
-                .onChange(v => { 
-                    this.plugin.settings.templateFolder = sanitizeFolderPath(v); 
-                    this.debouncedSave(); 
+                .onChange(v => {
+                    this.plugin.settings.templateFolder = sanitizeFolderPath(v);
+                    this.debouncedSave();
                 }));
 
         new Setting(containerEl)
@@ -108,9 +108,9 @@ export class SettingsTab extends PluginSettingTab {
             .addText(text => text
                 .setPlaceholder('Inbox')
                 .setValue(this.plugin.settings.defaultOutputPath)
-                .onChange(v => { 
-                    this.plugin.settings.defaultOutputPath = sanitizeFolderPath(v); 
-                    this.debouncedSave(); 
+                .onChange(v => {
+                    this.plugin.settings.defaultOutputPath = sanitizeFolderPath(v);
+                    this.debouncedSave();
                 }));
 
         new Setting(containerEl)
@@ -203,29 +203,90 @@ export class SettingsTab extends PluginSettingTab {
     }
 
     /**
-     * Renders a single mapping row (Trigger, Template, Path, Status).
+     * Renders a single mapping row using a polished Card/Accordion layout.
      */
     private renderMappingRow(containerEl: HTMLElement, mapping: TriggerTemplateMapping, index: number) {
         const symbol = this.plugin.settings.triggerSymbol;
         const useProperties = this.plugin.settings.useProperties;
-        
-        const s = new Setting(containerEl)
-            .addToggle(t => t
-                .setValue(mapping.enabled)
-                .onChange(async v => {
-                    mapping.enabled = v;
-                    await this.plugin.saveSettings();
-                }))
-            .addText(t => { t
-                    .setPlaceholder(symbol + 'trigger')
-                    .setValue(mapping.trigger)
-                    .onChange(v => {
-                        mapping.trigger = v.startsWith(symbol) ? v : (v ? symbol + v : symbol);
-                        t.setValue(mapping.trigger);
-                        this.debouncedSave();
-                    });
-                t.inputEl.setCssProps({ 'flex': '1', 'width': '100%' });
-            })
+
+        const detailsEl = containerEl.createEl('details');
+        detailsEl.addClass('objects-mapping-details');
+        detailsEl.setCssProps({
+            'background': 'var(--background-secondary-alt)',
+            'border': '1px solid var(--background-modifier-border)',
+            'border-radius': '6px',
+            'margin-bottom': '12px'
+        });
+
+        if (!mapping.trigger || mapping.trigger === symbol) {
+            detailsEl.setAttribute('open', '');
+        }
+
+        const summaryEl = detailsEl.createEl('summary');
+        summaryEl.setCssProps({
+            'cursor': 'pointer',
+            'outline': 'none',
+            'padding': '10px 15px',
+            'font-weight': 'var(--font-bold)'
+        });
+
+        const titleText = (mapping.trigger && mapping.trigger !== symbol)
+            ? `Mapping: ${mapping.trigger}`
+            : `New Mapping (#${index + 1})`;
+
+        const headerSetting = new Setting(summaryEl).setName(titleText);
+
+        headerSetting.settingEl.setCssProps({
+            'padding': '5px 10px',
+
+            'border': 'none'
+        });
+
+        headerSetting.addToggle(t => t
+            .setValue(mapping.enabled)
+            .setTooltip(mapping.enabled ? 'Disable mapping' : 'Enable mapping')
+            .onChange(async v => {
+                mapping.enabled = v;
+                t.setTooltip(v ? 'Disable mapping' : 'Enable mapping');
+                await this.plugin.saveSettings();
+            }));
+
+        headerSetting.addExtraButton(b => b
+            .setIcon('trash')
+            .setTooltip('Delete mapping')
+            .onClick(async () => {
+                this.plugin.settings.triggerTemplates.splice(index, 1);
+                await this.plugin.saveSettings();
+                this.display();
+            }));
+
+        headerSetting.controlEl.addEventListener('click', (e) => {
+            e.stopPropagation();
+        });
+
+        const contentEl = detailsEl.createDiv();
+        contentEl.setCssProps({
+            'padding': '0 15px 15px 15px',
+            'border-top': '1px solid var(--background-modifier-border)',
+            'margin-top': '5px'
+        });
+
+        new Setting(contentEl)
+            .setName('Trigger text')
+            .setDesc('The text that initiates this template.')
+            .addText(t => t
+                .setPlaceholder(symbol + 'trigger')
+                .setValue(mapping.trigger)
+                .onChange(v => {
+                    mapping.trigger = v.startsWith(symbol) ? v : (v ? symbol + v : symbol);
+                    t.setValue(mapping.trigger);
+                    headerSetting.setName(`Mapping: ${mapping.trigger}`);
+                    this.debouncedSave();
+                }));
+
+        new Setting(contentEl)
+            .setName('Template file')
+            .setDesc('The template to be inserted.')
             .addText(t => {
                 new TemplateSuggest(this.app, t.inputEl, this.plugin);
                 t.setPlaceholder('Template')
@@ -234,8 +295,11 @@ export class SettingsTab extends PluginSettingTab {
                         mapping.templateName = v.replace(/\.md$/, '');
                         this.debouncedSave();
                     });
-                t.inputEl.setCssProps({ 'flex': '1', 'width': '100%' });
-            })
+            });
+
+        new Setting(contentEl)
+            .setName('Target folder')
+            .setDesc('Where the generated file should be saved.')
             .addText(t => {
                 new FolderSuggest(this.app, t.inputEl);
                 t.setPlaceholder('Target folder')
@@ -244,47 +308,31 @@ export class SettingsTab extends PluginSettingTab {
                         mapping.outputPath = sanitizeFolderPath(v);
                         this.debouncedSave();
                     });
-                t.inputEl.setCssProps({ 'flex': '1', 'width': '100%' });
             });
 
         if (useProperties) {
-            s.addText(t => {
-                t.setPlaceholder('Key')
+            new Setting(contentEl)
+                .setName('Property key')
+                .setDesc('Frontmatter property key.')
+                .addText(t => t
+                    .setPlaceholder('Key')
                     .setValue(mapping.propertyKey || '')
                     .onChange(v => {
                         mapping.propertyKey = v;
                         this.debouncedSave();
-                    });
-                t.inputEl.setCssProps({ 'flex': '0.6', 'width': '100%' });
-            })
-            .addText(t => {
-                t.setPlaceholder('Value')
+                    }));
+
+            new Setting(contentEl)
+                .setName('Property value')
+                .setDesc('Frontmatter property value.')
+                .addText(t => t
+                    .setPlaceholder('Value')
                     .setValue(mapping.propertyValue || '')
                     .onChange(v => {
                         mapping.propertyValue = v;
                         this.debouncedSave();
-                    });
-                t.inputEl.setCssProps({ 'flex': '0.6', 'width': '100%' });
-            });
+                    }));
         }
-
-        s.addExtraButton(b => b
-                .setIcon('trash')
-                .setTooltip('Delete mapping')
-                .onClick(async () => {
-                    this.plugin.settings.triggerTemplates.splice(index, 1);
-                    await this.plugin.saveSettings();
-                    this.display();
-                }));
-
-        s.infoEl.remove();
-        s.controlEl.addClass('objects-mapping-control');
-        s.controlEl.setCssProps({
-            'display': 'flex',
-            'flex': '1',
-            'width': '100%',
-            'gap': '10px'
-        });
     }
 
     private renderFooter(containerEl: HTMLElement) {
@@ -303,13 +351,13 @@ class TemplateSuggest extends AbstractInputSuggest<TFile> {
     constructor(app: App, private inputEl: HTMLInputElement, private plugin: ObjectsPlugin) {
         super(app, inputEl);
     }
-    
+
     getSuggestions(query: string): TFile[] {
         const root = sanitizeFolderPath(this.plugin.settings.templateFolder);
         if (!root) return [];
         const lower = query.toLowerCase();
-        return this.app.vault.getMarkdownFiles().filter(f => 
-            (f.path.startsWith(root + '/') || f.parent?.path === root) && 
+        return this.app.vault.getMarkdownFiles().filter(f =>
+            (f.path.startsWith(root + '/') || f.parent?.path === root) &&
             f.path.toLowerCase().includes(lower)
         );
     }
@@ -333,14 +381,14 @@ export class FolderSuggest extends AbstractInputSuggest<string> {
     constructor(app: App, private inputEl: HTMLInputElement) {
         super(app, inputEl);
     }
-    
+
     getSuggestions(query: string): string[] {
         const lowerCaseInput = query.toLowerCase();
         const folders = this.app.vault.getAllLoadedFiles()
             .filter((f): f is TFolder => f instanceof TFolder)
-            .map(f => f.path); 
-            
-        return folders.filter(folderPath => 
+            .map(f => f.path);
+
+        return folders.filter(folderPath =>
             folderPath.toLowerCase().includes(lowerCaseInput)
         );
     }
