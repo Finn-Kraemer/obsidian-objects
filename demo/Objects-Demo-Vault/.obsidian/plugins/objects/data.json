@@ -1,0 +1,40 @@
+{
+  "templateFolder": "Templates",
+  "triggerSymbol": "@",
+  "triggerTemplates": [
+    {
+      "trigger": "@project",
+      "templateName": "project",
+      "outputPath": "Projects/",
+      "enabled": true,
+      "type": "template"
+    },
+    {
+      "trigger": "@atomic",
+      "templateName": "atomic",
+      "outputPath": "Zettelkasten/",
+      "enabled": true,
+      "type": "template"
+    },
+    {
+      "trigger": "@person",
+      "templateName": "person",
+      "enabled": true,
+      "type": "template"
+    },
+    {
+      "trigger": "@daily",
+      "templateName": "",
+      "enabled": true,
+      "type": "command",
+      "commandId": "daily-notes",
+      "commandName": "Daily notes: Open today's daily note"
+    }
+  ],
+  "defaultOutputPath": "",
+  "openNewNote": false,
+  "useProperties": false,
+  "archiveTag": "",
+  "archivePropertyKey": "",
+  "archivePropertyValue": ""
+}

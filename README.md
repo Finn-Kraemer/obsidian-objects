@@ -27,6 +27,7 @@ If you've experimented with apps like **Anytype** or **Capacities** because you 
 
 - **Unified Workflow**: Creation, organization, and linking happen in one single interaction.
 - **Smart Routing**: Notes are automatically moved to their designated folders based on their type.
+- **Command Execution**: Map triggers to any Obsidian command (e.g., `@reload` to reload the app, `@daily` to open the daily note) to stay in your flow.
 - **Dynamic Content**: Uses a powerful fallback system (`{{title}}`, `{{date}}`, `{{time}}`) or integrates natively with [Templater](https://github.com/SilentVoid13/Templater).
 - **Intelligent Linking**: If an object already exists, the plugin links to it instead of creating a duplicate. The creation modal suggests existing notes in real-time.
 - **Property Management**: Automatically add frontmatter properties (e.g., `type: project`) to newly created notes and filter suggestions by them.
@@ -45,16 +46,22 @@ If you've experimented with apps like **Anytype** or **Capacities** because you 
     <figcaption><i>1. Configure custom triggers, mappings, and property keys</i></figcaption>
   </figure>
   <br/>
+    <figure>
+    <img src="assets/settings3.png" alt="Settings Page" width="600" />
+    <br/>
+    <figcaption><i>2. Or use triggers for command-shortcuts</i></figcaption>
+  </figure>
+  <br/>
   <figure>
     <img src="assets/select_objects.png" alt="Select Object Suggestion" width="600" />
     <br/>
-    <figcaption><i>2. Trigger with your custom symbol and select your object type</i></figcaption>
+    <figcaption><i>3. Trigger with your custom symbol and select your object type</i></figcaption>
   </figure>
   <br/>
   <figure>
     <img src="assets/create_object.png" alt="Enter Title Modal" width="600" />
     <br/>
-    <figcaption><i>3. Enter the name—intelligent autocompletion suggests existing notes</i></figcaption>
+    <figcaption><i>4. Enter the name—intelligent autocompletion suggests existing notes</i></figcaption>
   </figure>
 </div>
 
