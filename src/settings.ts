@@ -209,7 +209,6 @@ export class SettingsTab extends PluginSettingTab {
         const symbol = this.plugin.settings.triggerSymbol;
         const useProperties = this.plugin.settings.useProperties;
 
-        // 1. Container als "Karte" formatieren
         const detailsEl = containerEl.createEl('details');
         detailsEl.addClass('objects-mapping-details');
         detailsEl.setCssProps({
@@ -223,7 +222,6 @@ export class SettingsTab extends PluginSettingTab {
             detailsEl.setAttribute('open', '');
         }
 
-        // 2. Klickbarer Header-Bereich
         const summaryEl = detailsEl.createEl('summary');
         summaryEl.setCssProps({
             'cursor': 'pointer',
@@ -238,13 +236,12 @@ export class SettingsTab extends PluginSettingTab {
 
         const headerSetting = new Setting(summaryEl).setName(titleText);
 
-        // Entfernt das Standard-Padding von Settings, damit es sauber in den Summary-Header passt
         headerSetting.settingEl.setCssProps({
-            'padding': '0',
+            'padding': '5px 10px',
+
             'border': 'none'
         });
 
-        // Toggle-Button (Aktivieren/Deaktivieren) im Header
         headerSetting.addToggle(t => t
             .setValue(mapping.enabled)
             .setTooltip(mapping.enabled ? 'Disable mapping' : 'Enable mapping')
@@ -254,7 +251,6 @@ export class SettingsTab extends PluginSettingTab {
                 await this.plugin.saveSettings();
             }));
 
-        // Papierkorb im Header
         headerSetting.addExtraButton(b => b
             .setIcon('trash')
             .setTooltip('Delete mapping')
@@ -264,13 +260,10 @@ export class SettingsTab extends PluginSettingTab {
                 this.display();
             }));
 
-        // Verhindert, dass Klicks auf die Buttons das Akkordeon umschalten
         headerSetting.controlEl.addEventListener('click', (e) => {
-            e.preventDefault();
             e.stopPropagation();
         });
 
-        // 3. Inhalt des Akkordeons (wird nur gezeigt, wenn aufgeklappt)
         const contentEl = detailsEl.createDiv();
         contentEl.setCssProps({
             'padding': '0 15px 15px 15px',
@@ -287,7 +280,6 @@ export class SettingsTab extends PluginSettingTab {
                 .onChange(v => {
                     mapping.trigger = v.startsWith(symbol) ? v : (v ? symbol + v : symbol);
                     t.setValue(mapping.trigger);
-                    // Update den Header-Titel live beim Tippen
                     headerSetting.setName(`Mapping: ${mapping.trigger}`);
                     this.debouncedSave();
                 }));

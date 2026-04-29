@@ -201,7 +201,7 @@ var SettingsTab = class extends import_obsidian2.PluginSettingTab {
     const titleText = mapping.trigger && mapping.trigger !== symbol ? `Mapping: ${mapping.trigger}` : `New Mapping (#${index + 1})`;
     const headerSetting = new import_obsidian2.Setting(summaryEl).setName(titleText);
     headerSetting.settingEl.setCssProps({
-      "padding": "0",
+      "padding": "5px 10px",
       "border": "none"
     });
     headerSetting.addToggle((t) => t.setValue(mapping.enabled).setTooltip(mapping.enabled ? "Disable mapping" : "Enable mapping").onChange(async (v) => {
@@ -215,7 +215,6 @@ var SettingsTab = class extends import_obsidian2.PluginSettingTab {
       this.display();
     }));
     headerSetting.controlEl.addEventListener("click", (e) => {
-      e.preventDefault();
       e.stopPropagation();
     });
     const contentEl = detailsEl.createDiv();
@@ -716,7 +715,15 @@ var ObjectsPlugin = class extends import_obsidian6.Plugin {
    * Loads saved settings and merges them with default values.
    */
   async loadSettings() {
-    this.settings = Object.assign({}, DEFAULT_SETTINGS, await this.loadData());
+    const loadedData = await this.loadData();
+    this.settings = Object.assign({}, DEFAULT_SETTINGS, loadedData);
+    if (this.settings.triggerTemplates) {
+      this.settings.triggerTemplates.forEach((mapping) => {
+        if (mapping.enabled === void 0) {
+          mapping.enabled = true;
+        }
+      });
+    }
   }
   /**
    * Permanently saves current settings.
