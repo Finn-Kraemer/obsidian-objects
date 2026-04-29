@@ -40,7 +40,7 @@ var DEFAULT_SETTINGS = {
   ],
   defaultOutputPath: "",
   openNewNote: true,
-  useProperties: false,
+  useProperties: true,
   archiveTag: "",
   archivePropertyKey: "",
   archivePropertyValue: ""
@@ -176,63 +176,51 @@ var SettingsTab = class extends import_obsidian2.PluginSettingTab {
   }
   /**
    * Renders a single mapping row (Trigger, Template, Path, Status).
+   * Refactored to use standard Obsidian Settings UI.
    */
   renderMappingRow(containerEl, mapping, index) {
     const symbol = this.plugin.settings.triggerSymbol;
     const useProperties = this.plugin.settings.useProperties;
-    const s = new import_obsidian2.Setting(containerEl).addToggle((t) => t.setValue(mapping.enabled).onChange(async (v) => {
+    new import_obsidian2.Setting(containerEl).setName(`Mapping #${index + 1}`).setHeading();
+    new import_obsidian2.Setting(containerEl).setName("Enabled").setDesc("Toggle whether this trigger mapping is active.").addToggle((t) => t.setValue(mapping.enabled).onChange(async (v) => {
       mapping.enabled = v;
       await this.plugin.saveSettings();
-    })).addText((t) => {
-      t.setPlaceholder(symbol + "trigger").setValue(mapping.trigger).onChange((v) => {
-        mapping.trigger = v.startsWith(symbol) ? v : v ? symbol + v : symbol;
-        t.setValue(mapping.trigger);
-        this.debouncedSave();
-      });
-      t.inputEl.setCssProps({ "flex": "1", "width": "100%" });
-    }).addText((t) => {
+    }));
+    new import_obsidian2.Setting(containerEl).setName("Trigger text").setDesc("The text that initiates this template.").addText((t) => t.setPlaceholder(symbol + "trigger").setValue(mapping.trigger).onChange((v) => {
+      mapping.trigger = v.startsWith(symbol) ? v : v ? symbol + v : symbol;
+      t.setValue(mapping.trigger);
+      this.debouncedSave();
+    }));
+    new import_obsidian2.Setting(containerEl).setName("Template file").setDesc("The template to be inserted.").addText((t) => {
       new TemplateSuggest(this.app, t.inputEl, this.plugin);
       t.setPlaceholder("Template").setValue(mapping.templateName).onChange((v) => {
         mapping.templateName = v.replace(/\.md$/, "");
         this.debouncedSave();
       });
-      t.inputEl.setCssProps({ "flex": "1", "width": "100%" });
-    }).addText((t) => {
+    });
+    new import_obsidian2.Setting(containerEl).setName("Target folder").setDesc("Where the generated file should be saved.").addText((t) => {
       new FolderSuggest(this.app, t.inputEl);
       t.setPlaceholder("Target folder").setValue(mapping.outputPath || "").onChange((v) => {
         mapping.outputPath = sanitizeFolderPath(v);
         this.debouncedSave();
       });
-      t.inputEl.setCssProps({ "flex": "1", "width": "100%" });
     });
     if (useProperties) {
-      s.addText((t) => {
-        t.setPlaceholder("Key").setValue(mapping.propertyKey || "").onChange((v) => {
-          mapping.propertyKey = v;
-          this.debouncedSave();
-        });
-        t.inputEl.setCssProps({ "flex": "0.6", "width": "100%" });
-      }).addText((t) => {
-        t.setPlaceholder("Value").setValue(mapping.propertyValue || "").onChange((v) => {
-          mapping.propertyValue = v;
-          this.debouncedSave();
-        });
-        t.inputEl.setCssProps({ "flex": "0.6", "width": "100%" });
-      });
+      new import_obsidian2.Setting(containerEl).setName("Property key").setDesc("Frontmatter property key.").addText((t) => t.setPlaceholder("Key").setValue(mapping.propertyKey || "").onChange((v) => {
+        mapping.propertyKey = v;
+        this.debouncedSave();
+      }));
+      new import_obsidian2.Setting(containerEl).setName("Property value").setDesc("Frontmatter property value.").addText((t) => t.setPlaceholder("Value").setValue(mapping.propertyValue || "").onChange((v) => {
+        mapping.propertyValue = v;
+        this.debouncedSave();
+      }));
     }
-    s.addExtraButton((b) => b.setIcon("trash").setTooltip("Delete mapping").onClick(async () => {
+    new import_obsidian2.Setting(containerEl).setName("Delete mapping").setDesc("Remove this trigger mapping entirely.").addButton((b) => b.setIcon("trash").setWarning().setTooltip("Delete mapping").onClick(async () => {
       this.plugin.settings.triggerTemplates.splice(index, 1);
       await this.plugin.saveSettings();
       this.display();
     }));
-    s.infoEl.remove();
-    s.controlEl.addClass("objects-mapping-control");
-    s.controlEl.setCssProps({
-      "display": "flex",
-      "flex": "1",
-      "width": "100%",
-      "gap": "10px"
-    });
+    containerEl.createEl("hr");
   }
   renderFooter(containerEl) {
     const symbol = this.plugin.settings.triggerSymbol;
