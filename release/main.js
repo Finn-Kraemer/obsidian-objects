@@ -181,8 +181,7 @@ var SettingsTab = class extends import_obsidian2.PluginSettingTab {
   renderMappingRow(containerEl, mapping, index) {
     const symbol = this.plugin.settings.triggerSymbol;
     const useProperties = this.plugin.settings.useProperties;
-    const headerEl = containerEl.createEl("h4", { text: `Mapping #${index + 1}` });
-    headerEl.setCssProps({ "margin-top": "1em", "margin-bottom": "0.5em", "color": "var(--text-accent)" });
+    new import_obsidian2.Setting(containerEl).setName(`Mapping #${index + 1}`).setHeading();
     new import_obsidian2.Setting(containerEl).setName("Enabled").setDesc("Toggle whether this trigger mapping is active.").addToggle((t) => t.setValue(mapping.enabled).onChange(async (v) => {
       mapping.enabled = v;
       await this.plugin.saveSettings();

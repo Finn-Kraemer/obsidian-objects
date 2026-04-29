@@ -211,8 +211,7 @@ export class SettingsTab extends PluginSettingTab {
         const useProperties = this.plugin.settings.useProperties;
         
         // Group Header
-        const headerEl = containerEl.createEl('h4', { text: `Mapping #${index + 1}` });
-        headerEl.setCssProps({ 'margin-top': '1em', 'margin-bottom': '0.5em', 'color': 'var(--text-accent)' });
+        new Setting(containerEl).setName(`Mapping #${index + 1}`).setHeading();
 
         // Enabled Toggle
         new Setting(containerEl)
