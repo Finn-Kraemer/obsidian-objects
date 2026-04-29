@@ -276,7 +276,7 @@ export class SettingsTab extends PluginSettingTab {
             .setDesc('Select whether this trigger inserts a template or executes a command.')
             .addDropdown(dropdown => dropdown
                 .addOption('template', 'Template')
-                .addOption('command', 'Obsidian Command')
+                .addOption('command', 'Obsidian command')
                 .setValue(mapping.type || 'template')
                 .onChange(async (value: 'template' | 'command') => {
                     mapping.type = value;
@@ -305,7 +305,7 @@ export class SettingsTab extends PluginSettingTab {
                     new CommandSuggest(this.app, t.inputEl);
                     t.setPlaceholder('Search command...')
                         .setValue(mapping.commandName || '')
-                        .onChange(v => {
+                        .onChange(() => {
                             // The actual value is set by the suggester
                             this.debouncedSave();
                         });
@@ -454,7 +454,9 @@ class CommandSuggest extends AbstractInputSuggest<{ id: string, name: string }> 
         const lowerQuery = query.toLowerCase();
         
         return commands
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
             .map((cmd: any) => ({ id: cmd.id, name: cmd.name }))
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
             .filter((cmd: any) => cmd.name.toLowerCase().includes(lowerQuery));
     }
 
