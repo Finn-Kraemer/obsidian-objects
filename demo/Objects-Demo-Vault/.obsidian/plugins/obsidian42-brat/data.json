@@ -1,0 +1,24 @@
+{
+  "pluginList": [
+    "Finn-Kraemer/obsidian-objects"
+  ],
+  "pluginSubListFrozenVersion": [
+    {
+      "repo": "Finn-Kraemer/obsidian-objects",
+      "version": "latest"
+    }
+  ],
+  "themesList": [],
+  "updateAtStartup": true,
+  "updateThemesAtStartup": true,
+  "enableAfterInstall": true,
+  "loggingEnabled": false,
+  "loggingPath": "BRAT-log",
+  "loggingVerboseEnabled": false,
+  "debuggingMode": false,
+  "notificationsEnabled": true,
+  "globalTokenName": "",
+  "personalAccessToken": "",
+  "selectLatestPluginVersionByDefault": false,
+  "allowIncompatiblePlugins": false
+}
