@@ -38,8 +38,8 @@ export class SettingsTab extends PluginSettingTab {
         const isTemplaterActive = !!this.plugin.templater.getApi();
         new Setting(containerEl)
             .setName('Integration status')
-            .setDesc(isTemplaterActive 
-                ? 'Templater integration is active. Note: Ensure "Trigger Templater on new file creation" is enabled in Templater settings for full syntax support' 
+            .setDesc(isTemplaterActive
+                ? 'Templater integration is active. Note: Ensure "Trigger Templater on new file creation" is enabled in Templater settings for full syntax support'
                 : 'Templater plugin was not detected')
             .then(s => {
                 const statusText = isTemplaterActive ? 'Integration active' : 'Integration missing';
@@ -73,10 +73,10 @@ export class SettingsTab extends PluginSettingTab {
                 .onChange(async v => {
                     const oldSymbol = this.plugin.settings.triggerSymbol;
                     const newSymbol = v.trim() || '@';
-                    
+
                     if (oldSymbol !== newSymbol) {
                         this.plugin.settings.triggerSymbol = newSymbol;
-                        
+
                         // Update all existing triggers with the new symbol
                         this.plugin.settings.triggerTemplates.forEach(t => {
                             if (t.trigger.startsWith(oldSymbol)) {
@@ -85,7 +85,7 @@ export class SettingsTab extends PluginSettingTab {
                                 t.trigger = newSymbol + t.trigger;
                             }
                         });
-                        
+
                         await this.plugin.saveSettings();
                         this.display(); // Refresh to show updated triggers in the list
                     }
@@ -97,9 +97,9 @@ export class SettingsTab extends PluginSettingTab {
             .addText(text => text
                 .setPlaceholder('Templates')
                 .setValue(this.plugin.settings.templateFolder)
-                .onChange(v => { 
-                    this.plugin.settings.templateFolder = sanitizeFolderPath(v); 
-                    this.debouncedSave(); 
+                .onChange(v => {
+                    this.plugin.settings.templateFolder = sanitizeFolderPath(v);
+                    this.debouncedSave();
                 }));
 
         new Setting(containerEl)
@@ -108,9 +108,9 @@ export class SettingsTab extends PluginSettingTab {
             .addText(text => text
                 .setPlaceholder('Inbox')
                 .setValue(this.plugin.settings.defaultOutputPath)
-                .onChange(v => { 
-                    this.plugin.settings.defaultOutputPath = sanitizeFolderPath(v); 
-                    this.debouncedSave(); 
+                .onChange(v => {
+                    this.plugin.settings.defaultOutputPath = sanitizeFolderPath(v);
+                    this.debouncedSave();
                 }));
 
         new Setting(containerEl)
@@ -203,29 +203,82 @@ export class SettingsTab extends PluginSettingTab {
     }
 
     /**
-     * Renders a single mapping row (Trigger, Template, Path, Status).
-     * Refactored to use standard Obsidian Settings UI.
+     * Renders a single mapping row using a polished Card/Accordion layout.
      */
     private renderMappingRow(containerEl: HTMLElement, mapping: TriggerTemplateMapping, index: number) {
         const symbol = this.plugin.settings.triggerSymbol;
         const useProperties = this.plugin.settings.useProperties;
-        
-        // Group Header
-        new Setting(containerEl).setName(`Mapping #${index + 1}`).setHeading();
 
-        // Enabled Toggle
-        new Setting(containerEl)
-            .setName('Enabled')
-            .setDesc('Toggle whether this trigger mapping is active.')
-            .addToggle(t => t
-                .setValue(mapping.enabled)
-                .onChange(async v => {
-                    mapping.enabled = v;
-                    await this.plugin.saveSettings();
-                }));
+        // 1. Container als "Karte" formatieren
+        const detailsEl = containerEl.createEl('details');
+        detailsEl.addClass('objects-mapping-details');
+        detailsEl.setCssProps({
+            'background': 'var(--background-secondary-alt)',
+            'border': '1px solid var(--background-modifier-border)',
+            'border-radius': '6px',
+            'margin-bottom': '12px'
+        });
 
-        // Trigger Input
-        new Setting(containerEl)
+        if (!mapping.trigger || mapping.trigger === symbol) {
+            detailsEl.setAttribute('open', '');
+        }
+
+        // 2. Klickbarer Header-Bereich
+        const summaryEl = detailsEl.createEl('summary');
+        summaryEl.setCssProps({
+            'cursor': 'pointer',
+            'outline': 'none',
+            'padding': '10px 15px',
+            'font-weight': 'var(--font-bold)'
+        });
+
+        const titleText = (mapping.trigger && mapping.trigger !== symbol)
+            ? `Mapping: ${mapping.trigger}`
+            : `New Mapping (#${index + 1})`;
+
+        const headerSetting = new Setting(summaryEl).setName(titleText);
+
+        // Entfernt das Standard-Padding von Settings, damit es sauber in den Summary-Header passt
+        headerSetting.settingEl.setCssProps({
+            'padding': '0',
+            'border': 'none'
+        });
+
+        // Toggle-Button (Aktivieren/Deaktivieren) im Header
+        headerSetting.addToggle(t => t
+            .setValue(mapping.enabled)
+            .setTooltip(mapping.enabled ? 'Disable mapping' : 'Enable mapping')
+            .onChange(async v => {
+                mapping.enabled = v;
+                t.setTooltip(v ? 'Disable mapping' : 'Enable mapping');
+                await this.plugin.saveSettings();
+            }));
+
+        // Papierkorb im Header
+        headerSetting.addExtraButton(b => b
+            .setIcon('trash')
+            .setTooltip('Delete mapping')
+            .onClick(async () => {
+                this.plugin.settings.triggerTemplates.splice(index, 1);
+                await this.plugin.saveSettings();
+                this.display();
+            }));
+
+        // Verhindert, dass Klicks auf die Buttons das Akkordeon umschalten
+        headerSetting.controlEl.addEventListener('click', (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+        });
+
+        // 3. Inhalt des Akkordeons (wird nur gezeigt, wenn aufgeklappt)
+        const contentEl = detailsEl.createDiv();
+        contentEl.setCssProps({
+            'padding': '0 15px 15px 15px',
+            'border-top': '1px solid var(--background-modifier-border)',
+            'margin-top': '5px'
+        });
+
+        new Setting(contentEl)
             .setName('Trigger text')
             .setDesc('The text that initiates this template.')
             .addText(t => t
@@ -234,11 +287,12 @@ export class SettingsTab extends PluginSettingTab {
                 .onChange(v => {
                     mapping.trigger = v.startsWith(symbol) ? v : (v ? symbol + v : symbol);
                     t.setValue(mapping.trigger);
+                    // Update den Header-Titel live beim Tippen
+                    headerSetting.setName(`Mapping: ${mapping.trigger}`);
                     this.debouncedSave();
                 }));
 
-        // Template Input
-        new Setting(containerEl)
+        new Setting(contentEl)
             .setName('Template file')
             .setDesc('The template to be inserted.')
             .addText(t => {
@@ -251,8 +305,7 @@ export class SettingsTab extends PluginSettingTab {
                     });
             });
 
-        // Target Folder Input
-        new Setting(containerEl)
+        new Setting(contentEl)
             .setName('Target folder')
             .setDesc('Where the generated file should be saved.')
             .addText(t => {
@@ -265,9 +318,8 @@ export class SettingsTab extends PluginSettingTab {
                     });
             });
 
-        // Optional Properties
         if (useProperties) {
-            new Setting(containerEl)
+            new Setting(contentEl)
                 .setName('Property key')
                 .setDesc('Frontmatter property key.')
                 .addText(t => t
@@ -278,7 +330,7 @@ export class SettingsTab extends PluginSettingTab {
                         this.debouncedSave();
                     }));
 
-            new Setting(containerEl)
+            new Setting(contentEl)
                 .setName('Property value')
                 .setDesc('Frontmatter property value.')
                 .addText(t => t
@@ -289,23 +341,6 @@ export class SettingsTab extends PluginSettingTab {
                         this.debouncedSave();
                     }));
         }
-
-        // Delete Button
-        new Setting(containerEl)
-            .setName('Delete mapping')
-            .setDesc('Remove this trigger mapping entirely.')
-            .addButton(b => b
-                .setIcon('trash')
-                .setWarning() // Sets the button to red
-                .setTooltip('Delete mapping')
-                .onClick(async () => {
-                    this.plugin.settings.triggerTemplates.splice(index, 1);
-                    await this.plugin.saveSettings();
-                    this.display();
-                }));
-
-        // Visual separator at the end of the mapping block
-        containerEl.createEl('hr');
     }
 
     private renderFooter(containerEl: HTMLElement) {
@@ -324,13 +359,13 @@ class TemplateSuggest extends AbstractInputSuggest<TFile> {
     constructor(app: App, private inputEl: HTMLInputElement, private plugin: ObjectsPlugin) {
         super(app, inputEl);
     }
-    
+
     getSuggestions(query: string): TFile[] {
         const root = sanitizeFolderPath(this.plugin.settings.templateFolder);
         if (!root) return [];
         const lower = query.toLowerCase();
-        return this.app.vault.getMarkdownFiles().filter(f => 
-            (f.path.startsWith(root + '/') || f.parent?.path === root) && 
+        return this.app.vault.getMarkdownFiles().filter(f =>
+            (f.path.startsWith(root + '/') || f.parent?.path === root) &&
             f.path.toLowerCase().includes(lower)
         );
     }
@@ -354,14 +389,14 @@ export class FolderSuggest extends AbstractInputSuggest<string> {
     constructor(app: App, private inputEl: HTMLInputElement) {
         super(app, inputEl);
     }
-    
+
     getSuggestions(query: string): string[] {
         const lowerCaseInput = query.toLowerCase();
         const folders = this.app.vault.getAllLoadedFiles()
             .filter((f): f is TFolder => f instanceof TFolder)
-            .map(f => f.path); 
-            
-        return folders.filter(folderPath => 
+            .map(f => f.path);
+
+        return folders.filter(folderPath =>
             folderPath.toLowerCase().includes(lowerCaseInput)
         );
     }
