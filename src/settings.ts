@@ -204,28 +204,44 @@ export class SettingsTab extends PluginSettingTab {
 
     /**
      * Renders a single mapping row (Trigger, Template, Path, Status).
+     * Refactored to use standard Obsidian Settings UI.
      */
     private renderMappingRow(containerEl: HTMLElement, mapping: TriggerTemplateMapping, index: number) {
         const symbol = this.plugin.settings.triggerSymbol;
         const useProperties = this.plugin.settings.useProperties;
         
-        const s = new Setting(containerEl)
+        // Group Header
+        const headerEl = containerEl.createEl('h4', { text: `Mapping #${index + 1}` });
+        headerEl.setCssProps({ 'margin-top': '1em', 'margin-bottom': '0.5em', 'color': 'var(--text-accent)' });
+
+        // Enabled Toggle
+        new Setting(containerEl)
+            .setName('Enabled')
+            .setDesc('Toggle whether this trigger mapping is active.')
             .addToggle(t => t
                 .setValue(mapping.enabled)
                 .onChange(async v => {
                     mapping.enabled = v;
                     await this.plugin.saveSettings();
-                }))
-            .addText(t => { t
-                    .setPlaceholder(symbol + 'trigger')
-                    .setValue(mapping.trigger)
-                    .onChange(v => {
-                        mapping.trigger = v.startsWith(symbol) ? v : (v ? symbol + v : symbol);
-                        t.setValue(mapping.trigger);
-                        this.debouncedSave();
-                    });
-                t.inputEl.setCssProps({ 'flex': '1', 'width': '100%' });
-            })
+                }));
+
+        // Trigger Input
+        new Setting(containerEl)
+            .setName('Trigger text')
+            .setDesc('The text that initiates this template.')
+            .addText(t => t
+                .setPlaceholder(symbol + 'trigger')
+                .setValue(mapping.trigger)
+                .onChange(v => {
+                    mapping.trigger = v.startsWith(symbol) ? v : (v ? symbol + v : symbol);
+                    t.setValue(mapping.trigger);
+                    this.debouncedSave();
+                }));
+
+        // Template Input
+        new Setting(containerEl)
+            .setName('Template file')
+            .setDesc('The template to be inserted.')
             .addText(t => {
                 new TemplateSuggest(this.app, t.inputEl, this.plugin);
                 t.setPlaceholder('Template')
@@ -234,8 +250,12 @@ export class SettingsTab extends PluginSettingTab {
                         mapping.templateName = v.replace(/\.md$/, '');
                         this.debouncedSave();
                     });
-                t.inputEl.setCssProps({ 'flex': '1', 'width': '100%' });
-            })
+            });
+
+        // Target Folder Input
+        new Setting(containerEl)
+            .setName('Target folder')
+            .setDesc('Where the generated file should be saved.')
             .addText(t => {
                 new FolderSuggest(this.app, t.inputEl);
                 t.setPlaceholder('Target folder')
@@ -244,32 +264,40 @@ export class SettingsTab extends PluginSettingTab {
                         mapping.outputPath = sanitizeFolderPath(v);
                         this.debouncedSave();
                     });
-                t.inputEl.setCssProps({ 'flex': '1', 'width': '100%' });
             });
 
+        // Optional Properties
         if (useProperties) {
-            s.addText(t => {
-                t.setPlaceholder('Key')
+            new Setting(containerEl)
+                .setName('Property key')
+                .setDesc('Frontmatter property key.')
+                .addText(t => t
+                    .setPlaceholder('Key')
                     .setValue(mapping.propertyKey || '')
                     .onChange(v => {
                         mapping.propertyKey = v;
                         this.debouncedSave();
-                    });
-                t.inputEl.setCssProps({ 'flex': '0.6', 'width': '100%' });
-            })
-            .addText(t => {
-                t.setPlaceholder('Value')
+                    }));
+
+            new Setting(containerEl)
+                .setName('Property value')
+                .setDesc('Frontmatter property value.')
+                .addText(t => t
+                    .setPlaceholder('Value')
                     .setValue(mapping.propertyValue || '')
                     .onChange(v => {
                         mapping.propertyValue = v;
                         this.debouncedSave();
-                    });
-                t.inputEl.setCssProps({ 'flex': '0.6', 'width': '100%' });
-            });
+                    }));
         }
 
-        s.addExtraButton(b => b
+        // Delete Button
+        new Setting(containerEl)
+            .setName('Delete mapping')
+            .setDesc('Remove this trigger mapping entirely.')
+            .addButton(b => b
                 .setIcon('trash')
+                .setWarning() // Sets the button to red
                 .setTooltip('Delete mapping')
                 .onClick(async () => {
                     this.plugin.settings.triggerTemplates.splice(index, 1);
@@ -277,14 +305,8 @@ export class SettingsTab extends PluginSettingTab {
                     this.display();
                 }));
 
-        s.infoEl.remove();
-        s.controlEl.addClass('objects-mapping-control');
-        s.controlEl.setCssProps({
-            'display': 'flex',
-            'flex': '1',
-            'width': '100%',
-            'gap': '10px'
-        });
+        // Visual separator at the end of the mapping block
+        containerEl.createEl('hr');
     }
 
     private renderFooter(containerEl: HTMLElement) {
