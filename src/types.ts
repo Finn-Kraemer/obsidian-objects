@@ -55,7 +55,7 @@ export const DEFAULT_SETTINGS: ObsidianObjectsSettings = {
     ],
     defaultOutputPath: '',
     openNewNote: true,
-    useProperties: true,
+    useProperties: false,
     archiveTag: '',
     archivePropertyKey: '',
     archivePropertyValue: '',
