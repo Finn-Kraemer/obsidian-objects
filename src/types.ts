@@ -6,14 +6,20 @@ import { TFile, Plugin } from 'obsidian';
 export interface TriggerTemplateMapping {
     /** The trigger word, e.g., "@project" */
     trigger: string;
+    /** Type of action: 'template' or 'command' */
+    type: 'template' | 'command';
     /** Name of the template file (without .md) */
-    templateName: string;
+    templateName?: string;
     /** Optional specific output folder for this trigger */
     outputPath?: string;
     /** Optional property key in frontmatter (e.g., "type") */
     propertyKey?: string;
     /** Optional property value in frontmatter (e.g., "#project") */
     propertyValue?: string;
+    /** Obsidian Command ID to execute */
+    commandId?: string;
+    /** Obsidian Command Name to display */
+    commandName?: string;
     /** Whether this mapping is active */
     enabled: boolean;
 }
@@ -49,9 +55,9 @@ export const DEFAULT_SETTINGS: ObsidianObjectsSettings = {
     templateFolder: 'Templates',
     triggerSymbol: '@',
     triggerTemplates: [
-        { trigger: '@project', templateName: 'project', outputPath: 'Projects/', enabled: true },
-        { trigger: '@atomic', templateName: 'atomic', outputPath: 'Zettelkasten/', enabled: true },
-        { trigger: '@person', templateName: 'person', enabled: true }
+        { trigger: '@project', templateName: 'project', outputPath: 'Projects/', enabled: true, type: 'template' },
+        { trigger: '@atomic', templateName: 'atomic', outputPath: 'Zettelkasten/', enabled: true, type: 'template' },
+        { trigger: '@person', templateName: 'person', enabled: true, type: 'template' }
     ],
     defaultOutputPath: '',
     openNewNote: true,

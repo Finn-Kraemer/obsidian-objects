@@ -196,7 +196,7 @@ export class SettingsTab extends PluginSettingTab {
                 .setCta()
                 .onClick(async () => {
                     const symbol = this.plugin.settings.triggerSymbol;
-                    this.plugin.settings.triggerTemplates.push({ trigger: symbol, templateName: '', enabled: true });
+                    this.plugin.settings.triggerTemplates.push({ trigger: symbol, templateName: '', enabled: true, type: 'template' });
                     await this.plugin.saveSettings();
                     this.display();
                 }));
@@ -272,8 +272,21 @@ export class SettingsTab extends PluginSettingTab {
         });
 
         new Setting(contentEl)
+            .setName('Type')
+            .setDesc('Select whether this trigger inserts a template or executes a command.')
+            .addDropdown(dropdown => dropdown
+                .addOption('template', 'Template')
+                .addOption('command', 'Obsidian Command')
+                .setValue(mapping.type || 'template')
+                .onChange(async (value: 'template' | 'command') => {
+                    mapping.type = value;
+                    await this.plugin.saveSettings();
+                    this.display(); // Refresh to show/hide relevant fields
+                }));
+
+        new Setting(contentEl)
             .setName('Trigger text')
-            .setDesc('The text that initiates this template.')
+            .setDesc('The text that initiates this action.')
             .addText(t => t
                 .setPlaceholder(symbol + 'trigger')
                 .setValue(mapping.trigger)
@@ -284,54 +297,77 @@ export class SettingsTab extends PluginSettingTab {
                     this.debouncedSave();
                 }));
 
-        new Setting(contentEl)
-            .setName('Template file')
-            .setDesc('The template to be inserted.')
-            .addText(t => {
-                new TemplateSuggest(this.app, t.inputEl, this.plugin);
-                t.setPlaceholder('Template')
-                    .setValue(mapping.templateName)
-                    .onChange(v => {
-                        mapping.templateName = v.replace(/\.md$/, '');
+        if (mapping.type === 'command') {
+            new Setting(contentEl)
+                .setName('Command')
+                .setDesc('The Obsidian command to execute.')
+                .addText(t => {
+                    new CommandSuggest(this.app, t.inputEl);
+                    t.setPlaceholder('Search command...')
+                        .setValue(mapping.commandName || '')
+                        .onChange(v => {
+                            // The actual value is set by the suggester
+                            this.debouncedSave();
+                        });
+                    
+                    // Hook into the suggester's selection to store the ID
+                    t.inputEl.addEventListener('command-selected', (e: CustomEvent) => {
+                        mapping.commandId = e.detail.id;
+                        mapping.commandName = e.detail.name;
+                        t.setValue(mapping.commandName || '');
                         this.debouncedSave();
                     });
-            });
-
-        new Setting(contentEl)
-            .setName('Target folder')
-            .setDesc('Where the generated file should be saved.')
-            .addText(t => {
-                new FolderSuggest(this.app, t.inputEl);
-                t.setPlaceholder('Target folder')
-                    .setValue(mapping.outputPath || '')
-                    .onChange(v => {
-                        mapping.outputPath = sanitizeFolderPath(v);
-                        this.debouncedSave();
-                    });
-            });
-
-        if (useProperties) {
+                });
+        } else {
             new Setting(contentEl)
-                .setName('Property key')
-                .setDesc('Frontmatter property key.')
-                .addText(t => t
-                    .setPlaceholder('Key')
-                    .setValue(mapping.propertyKey || '')
-                    .onChange(v => {
-                        mapping.propertyKey = v;
-                        this.debouncedSave();
-                    }));
+                .setName('Template file')
+                .setDesc('The template to be inserted.')
+                .addText(t => {
+                    new TemplateSuggest(this.app, t.inputEl, this.plugin);
+                    t.setPlaceholder('Template')
+                        .setValue(mapping.templateName || '')
+                        .onChange(v => {
+                            mapping.templateName = v ? v.replace(/\.md$/, '') : '';
+                            this.debouncedSave();
+                        });
+                });
 
             new Setting(contentEl)
-                .setName('Property value')
-                .setDesc('Frontmatter property value.')
-                .addText(t => t
-                    .setPlaceholder('Value')
-                    .setValue(mapping.propertyValue || '')
-                    .onChange(v => {
-                        mapping.propertyValue = v;
-                        this.debouncedSave();
-                    }));
+                .setName('Target folder')
+                .setDesc('Where the generated file should be saved.')
+                .addText(t => {
+                    new FolderSuggest(this.app, t.inputEl);
+                    t.setPlaceholder('Target folder')
+                        .setValue(mapping.outputPath || '')
+                        .onChange(v => {
+                            mapping.outputPath = sanitizeFolderPath(v);
+                            this.debouncedSave();
+                        });
+                });
+
+            if (useProperties) {
+                new Setting(contentEl)
+                    .setName('Property key')
+                    .setDesc('Frontmatter property key.')
+                    .addText(t => t
+                        .setPlaceholder('Key')
+                        .setValue(mapping.propertyKey || '')
+                        .onChange(v => {
+                            mapping.propertyKey = v;
+                            this.debouncedSave();
+                        }));
+
+                new Setting(contentEl)
+                    .setName('Property value')
+                    .setDesc('Frontmatter property value.')
+                    .addText(t => t
+                        .setPlaceholder('Value')
+                        .setValue(mapping.propertyValue || '')
+                        .onChange(v => {
+                            mapping.propertyValue = v;
+                            this.debouncedSave();
+                        }));
+            }
         }
     }
 
@@ -400,6 +436,35 @@ export class FolderSuggest extends AbstractInputSuggest<string> {
     selectSuggestion(folder: string): void {
         this.inputEl.value = folder;
         this.inputEl.dispatchEvent(new Event('input'));
+        this.close();
+    }
+}
+
+/**
+ * Suggester for selecting Obsidian commands.
+ */
+class CommandSuggest extends AbstractInputSuggest<{ id: string, name: string }> {
+    constructor(app: App, private inputEl: HTMLInputElement) {
+        super(app, inputEl);
+    }
+
+    getSuggestions(query: string): { id: string, name: string }[] {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const commands = (this.app as any).commands.listCommands();
+        const lowerQuery = query.toLowerCase();
+        
+        return commands
+            .map((cmd: any) => ({ id: cmd.id, name: cmd.name }))
+            .filter((cmd: any) => cmd.name.toLowerCase().includes(lowerQuery));
+    }
+
+    renderSuggestion(cmd: { id: string, name: string }, el: HTMLElement): void {
+        el.setText(cmd.name);
+    }
+
+    selectSuggestion(cmd: { id: string, name: string }): void {
+        this.inputEl.value = cmd.name;
+        this.inputEl.dispatchEvent(new CustomEvent('command-selected', { detail: cmd }));
         this.close();
     }
 }

@@ -77,11 +77,27 @@ export class TriggerSuggest extends EditorSuggest<TriggerTemplateMapping> {
 
     /**
      * Called when a suggestion is selected.
-     * Opens the modal for title entry.
+     * Opens the modal for title entry or executes a command.
      */
     selectSuggestion(suggestion: TriggerTemplateMapping) {
         const context = this.context;
         if (!context) return;
+
+        if (suggestion.type === 'command' && suggestion.commandId) {
+            // Remove the trigger text
+            context.editor.replaceRange('', context.start, context.end);
+            
+            // Execute the command
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            const success = (this.app as any).commands.executeCommandById(suggestion.commandId);
+            if (!success) {
+                new Notice(`Command "${suggestion.commandName || suggestion.commandId}" could not be executed.`);
+            }
+            
+            // Refocus the editor
+            context.editor.focus();
+            return;
+        }
 
         new TitleModal(this.app, this.plugin, suggestion, (title) => {
             void this.handleNoteCreation(suggestion, title, context);

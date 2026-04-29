@@ -34,9 +34,9 @@ var DEFAULT_SETTINGS = {
   templateFolder: "Templates",
   triggerSymbol: "@",
   triggerTemplates: [
-    { trigger: "@project", templateName: "project", outputPath: "Projects/", enabled: true },
-    { trigger: "@atomic", templateName: "atomic", outputPath: "Zettelkasten/", enabled: true },
-    { trigger: "@person", templateName: "person", enabled: true }
+    { trigger: "@project", templateName: "project", outputPath: "Projects/", enabled: true, type: "template" },
+    { trigger: "@atomic", templateName: "atomic", outputPath: "Zettelkasten/", enabled: true, type: "template" },
+    { trigger: "@person", templateName: "person", enabled: true, type: "template" }
   ],
   defaultOutputPath: "",
   openNewNote: true,
@@ -52,8 +52,7 @@ var import_obsidian2 = require("obsidian");
 // src/utils.ts
 var import_obsidian = require("obsidian");
 function sanitizeFolderPath(path) {
-  if (!path || path.trim() === "")
-    return "";
+  if (!path || path.trim() === "") return "";
   let sanitized = (0, import_obsidian.normalizePath)(path.trim());
   sanitized = sanitized.replace(/^\/+|\/+$/g, "");
   return sanitized;
@@ -169,7 +168,7 @@ var SettingsTab = class extends import_obsidian2.PluginSettingTab {
     });
     new import_obsidian2.Setting(containerEl).addButton((btn) => btn.setButtonText("Add new mapping").setCta().onClick(async () => {
       const symbol = this.plugin.settings.triggerSymbol;
-      this.plugin.settings.triggerTemplates.push({ trigger: symbol, templateName: "", enabled: true });
+      this.plugin.settings.triggerTemplates.push({ trigger: symbol, templateName: "", enabled: true, type: "template" });
       await this.plugin.saveSettings();
       this.display();
     }));
@@ -223,35 +222,55 @@ var SettingsTab = class extends import_obsidian2.PluginSettingTab {
       "border-top": "1px solid var(--background-modifier-border)",
       "margin-top": "5px"
     });
-    new import_obsidian2.Setting(contentEl).setName("Trigger text").setDesc("The text that initiates this template.").addText((t) => t.setPlaceholder(symbol + "trigger").setValue(mapping.trigger).onChange((v) => {
+    new import_obsidian2.Setting(contentEl).setName("Type").setDesc("Select whether this trigger inserts a template or executes a command.").addDropdown((dropdown) => dropdown.addOption("template", "Template").addOption("command", "Obsidian Command").setValue(mapping.type || "template").onChange(async (value) => {
+      mapping.type = value;
+      await this.plugin.saveSettings();
+      this.display();
+    }));
+    new import_obsidian2.Setting(contentEl).setName("Trigger text").setDesc("The text that initiates this action.").addText((t) => t.setPlaceholder(symbol + "trigger").setValue(mapping.trigger).onChange((v) => {
       mapping.trigger = v.startsWith(symbol) ? v : v ? symbol + v : symbol;
       t.setValue(mapping.trigger);
       headerSetting.setName(`Mapping: ${mapping.trigger}`);
       this.debouncedSave();
     }));
-    new import_obsidian2.Setting(contentEl).setName("Template file").setDesc("The template to be inserted.").addText((t) => {
-      new TemplateSuggest(this.app, t.inputEl, this.plugin);
-      t.setPlaceholder("Template").setValue(mapping.templateName).onChange((v) => {
-        mapping.templateName = v.replace(/\.md$/, "");
-        this.debouncedSave();
+    if (mapping.type === "command") {
+      new import_obsidian2.Setting(contentEl).setName("Command").setDesc("The Obsidian command to execute.").addText((t) => {
+        new CommandSuggest(this.app, t.inputEl);
+        t.setPlaceholder("Search command...").setValue(mapping.commandName || "").onChange((v) => {
+          this.debouncedSave();
+        });
+        t.inputEl.addEventListener("command-selected", (e) => {
+          mapping.commandId = e.detail.id;
+          mapping.commandName = e.detail.name;
+          t.setValue(mapping.commandName || "");
+          this.debouncedSave();
+        });
       });
-    });
-    new import_obsidian2.Setting(contentEl).setName("Target folder").setDesc("Where the generated file should be saved.").addText((t) => {
-      new FolderSuggest(this.app, t.inputEl);
-      t.setPlaceholder("Target folder").setValue(mapping.outputPath || "").onChange((v) => {
-        mapping.outputPath = sanitizeFolderPath(v);
-        this.debouncedSave();
+    } else {
+      new import_obsidian2.Setting(contentEl).setName("Template file").setDesc("The template to be inserted.").addText((t) => {
+        new TemplateSuggest(this.app, t.inputEl, this.plugin);
+        t.setPlaceholder("Template").setValue(mapping.templateName || "").onChange((v) => {
+          mapping.templateName = v ? v.replace(/\.md$/, "") : "";
+          this.debouncedSave();
+        });
       });
-    });
-    if (useProperties) {
-      new import_obsidian2.Setting(contentEl).setName("Property key").setDesc("Frontmatter property key.").addText((t) => t.setPlaceholder("Key").setValue(mapping.propertyKey || "").onChange((v) => {
-        mapping.propertyKey = v;
-        this.debouncedSave();
-      }));
-      new import_obsidian2.Setting(contentEl).setName("Property value").setDesc("Frontmatter property value.").addText((t) => t.setPlaceholder("Value").setValue(mapping.propertyValue || "").onChange((v) => {
-        mapping.propertyValue = v;
-        this.debouncedSave();
-      }));
+      new import_obsidian2.Setting(contentEl).setName("Target folder").setDesc("Where the generated file should be saved.").addText((t) => {
+        new FolderSuggest(this.app, t.inputEl);
+        t.setPlaceholder("Target folder").setValue(mapping.outputPath || "").onChange((v) => {
+          mapping.outputPath = sanitizeFolderPath(v);
+          this.debouncedSave();
+        });
+      });
+      if (useProperties) {
+        new import_obsidian2.Setting(contentEl).setName("Property key").setDesc("Frontmatter property key.").addText((t) => t.setPlaceholder("Key").setValue(mapping.propertyKey || "").onChange((v) => {
+          mapping.propertyKey = v;
+          this.debouncedSave();
+        }));
+        new import_obsidian2.Setting(contentEl).setName("Property value").setDesc("Frontmatter property value.").addText((t) => t.setPlaceholder("Value").setValue(mapping.propertyValue || "").onChange((v) => {
+          mapping.propertyValue = v;
+          this.debouncedSave();
+        }));
+      }
     }
   }
   renderFooter(containerEl) {
@@ -270,8 +289,7 @@ var TemplateSuggest = class extends import_obsidian2.AbstractInputSuggest {
   }
   getSuggestions(query) {
     const root = sanitizeFolderPath(this.plugin.settings.templateFolder);
-    if (!root)
-      return [];
+    if (!root) return [];
     const lower = query.toLowerCase();
     return this.app.vault.getMarkdownFiles().filter(
       (f) => {
@@ -311,6 +329,25 @@ var FolderSuggest = class extends import_obsidian2.AbstractInputSuggest {
   selectSuggestion(folder) {
     this.inputEl.value = folder;
     this.inputEl.dispatchEvent(new Event("input"));
+    this.close();
+  }
+};
+var CommandSuggest = class extends import_obsidian2.AbstractInputSuggest {
+  constructor(app, inputEl) {
+    super(app, inputEl);
+    this.inputEl = inputEl;
+  }
+  getSuggestions(query) {
+    const commands = this.app.commands.listCommands();
+    const lowerQuery = query.toLowerCase();
+    return commands.map((cmd) => ({ id: cmd.id, name: cmd.name })).filter((cmd) => cmd.name.toLowerCase().includes(lowerQuery));
+  }
+  renderSuggestion(cmd, el) {
+    el.setText(cmd.name);
+  }
+  selectSuggestion(cmd) {
+    this.inputEl.value = cmd.name;
+    this.inputEl.dispatchEvent(new CustomEvent("command-selected", { detail: cmd }));
     this.close();
   }
 };
@@ -471,8 +508,7 @@ var TitleModal = class extends import_obsidian4.Modal {
    * Validates input and executes the submit callback.
    */
   submit() {
-    if (this.isClosed)
-      return;
+    if (this.isClosed) return;
     const trimmed = this.result.trim();
     if (trimmed.length > 0) {
       this.onSubmit(trimmed);
@@ -526,13 +562,11 @@ var FileSuggest = class extends import_obsidian4.AbstractInputSuggest {
       }
       if (normalizedTarget !== "") {
         const folderPath = file.parent ? sanitizeFolderPath(file.parent.path) : "";
-        if (folderPath !== normalizedTarget)
-          return false;
+        if (folderPath !== normalizedTarget) return false;
       }
       if (useProperties && propertyKey && propertyValue) {
         const frontmatter = cache == null ? void 0 : cache.frontmatter;
-        if (!frontmatter)
-          return false;
+        if (!frontmatter) return false;
         const val = frontmatter[propertyKey];
         if (String(val).toLowerCase() !== propertyValue.toLowerCase()) {
           return false;
@@ -568,8 +602,7 @@ var TriggerSuggest = class extends import_obsidian5.EditorSuggest {
     const escapedSymbol = symbol.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
     const regex = new RegExp(`${escapedSymbol}([^\\s]*)$`);
     const match = regex.exec(line);
-    if (!match)
-      return null;
+    if (!match) return null;
     const query = match[1];
     const triggerStart = line.length - match[0].length;
     if (triggerStart > 0) {
@@ -599,12 +632,20 @@ var TriggerSuggest = class extends import_obsidian5.EditorSuggest {
   }
   /**
    * Called when a suggestion is selected.
-   * Opens the modal for title entry.
+   * Opens the modal for title entry or executes a command.
    */
   selectSuggestion(suggestion) {
     const context = this.context;
-    if (!context)
+    if (!context) return;
+    if (suggestion.type === "command" && suggestion.commandId) {
+      context.editor.replaceRange("", context.start, context.end);
+      const success = this.app.commands.executeCommandById(suggestion.commandId);
+      if (!success) {
+        new import_obsidian5.Notice(`Command "${suggestion.commandName || suggestion.commandId}" could not be executed.`);
+      }
+      context.editor.focus();
       return;
+    }
     new TitleModal(this.app, this.plugin, suggestion, (title) => {
       void this.handleNoteCreation(suggestion, title, context);
     }).open();
@@ -665,8 +706,7 @@ var TriggerSuggest = class extends import_obsidian5.EditorSuggest {
     const targetFolder = sanitizeFolderPath(folder);
     const specificPath = (0, import_obsidian5.normalizePath)(targetFolder ? `${targetFolder}/${title}.md` : `${title}.md`);
     const fileAtTable = this.app.vault.getAbstractFileByPath(specificPath);
-    if (fileAtTable instanceof import_obsidian5.TFile)
-      return fileAtTable;
+    if (fileAtTable instanceof import_obsidian5.TFile) return fileAtTable;
     if (!targetFolder) {
       return this.app.metadataCache.getFirstLinkpathDest(title, "");
     }
@@ -678,8 +718,7 @@ var TriggerSuggest = class extends import_obsidian5.EditorSuggest {
   getTemplateFile(suggestion) {
     var _a;
     const templateName = (_a = suggestion.templateName) == null ? void 0 : _a.trim();
-    if (!templateName)
-      return null;
+    if (!templateName) return null;
     const templateFolder = sanitizeFolderPath(this.plugin.settings.templateFolder);
     const templatePath = (0, import_obsidian5.normalizePath)(templateFolder ? `${templateFolder}/${templateName}.md` : `${templateName}.md`);
     const file = this.app.vault.getAbstractFileByPath(templatePath);
@@ -741,6 +780,9 @@ var ObjectsPlugin = class extends import_obsidian6.Plugin {
       this.settings.triggerTemplates.forEach((mapping) => {
         if (mapping.enabled === void 0) {
           mapping.enabled = true;
+        }
+        if (mapping.type === void 0) {
+          mapping.type = "template";
         }
       });
     }

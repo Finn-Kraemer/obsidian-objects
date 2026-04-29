@@ -175,6 +175,7 @@
   },
   "left-ribbon": {
     "hiddenItems": {
+      "obsidian42-brat:BRAT": false,
       "switcher:Open quick switcher": false,
       "graph:Open graph view": false,
       "canvas:Create new canvas": false,
@@ -186,6 +187,9 @@
   },
   "active": "b6a934fa9dda7a4b",
   "lastOpenFiles": [
+    "2026-04-29.md",
+    "Example.md",
+    "Dashboard.md",
     "Welcome.md",
     "Books/John Doe's Biografie.md",
     "Books/Books.base",
@@ -197,9 +201,7 @@
     "Projects/Projects.base",
     "Projects/Object-Oriented PKM System.md",
     "Projects/Deep Work Initiative.md",
-    "Dashboard.md",
     "Zettelkasten/AtomicNotes.base",
-    "Example.md",
     "linda.md",
     "test.md",
     "lala.md",
@@ -217,7 +219,6 @@
     "Templates/note.md",
     "Templates/project.md",
     "Zettelkasten/notiz.md",
-    "Invalid date.md",
     "Inbox/Notes",
     "Books",
     "Book"

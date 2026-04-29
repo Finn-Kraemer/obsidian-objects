@@ -54,11 +54,14 @@ export default class ObjectsPlugin extends Plugin {
         const loadedData = await this.loadData();
         this.settings = Object.assign({}, DEFAULT_SETTINGS, loadedData);
 
-        // Migration: Ensure all existing mappings have the 'enabled' property (default to true)
+        // Migration: Ensure all existing mappings have necessary properties
         if (this.settings.triggerTemplates) {
             this.settings.triggerTemplates.forEach(mapping => {
                 if (mapping.enabled === undefined) {
                     mapping.enabled = true;
+                }
+                if (mapping.type === undefined) {
+                    mapping.type = 'template';
                 }
             });
         }
