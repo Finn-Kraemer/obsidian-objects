@@ -41,6 +41,7 @@ If you've experimented with apps like **Anytype** or **Capacities** because you 
     <img src="assets/settings1.png" alt="Settings Page" width="600" />
     <br/>
     <img src="assets/settings2.png" alt="Settings Page" width="600" />
+    <br/>
     <figcaption><i>1. Configure custom triggers, mappings, and property keys</i></figcaption>
   </figure>
   <br/>
