@@ -119,7 +119,7 @@ export class SettingsTab extends PluginSettingTab {
                 .onChange(async v => {
                     this.plugin.settings.useProperties = v;
                     await this.plugin.saveSettings();
-                    this.display(); // Refresh to show/hide property fields
+                    this.display();
                 }));
 
         new Setting(containerEl)
@@ -276,8 +276,8 @@ export class SettingsTab extends PluginSettingTab {
                 .addOption('template', 'Template')
                 .addOption('command', 'Obsidian command')
                 .setValue(mapping.type || 'template')
-            .onChange(async (value: string) => {
-                mapping.type = value as 'template' | 'command';
+                .onChange(async (value: string) => {
+                    await (mapping.type = value as 'template' | 'command');
                     this.display();
                 }));
 
@@ -305,7 +305,7 @@ export class SettingsTab extends PluginSettingTab {
                         .onChange(() => {
                             this.debouncedSave();
                         });
-                    
+
                     t.inputEl.addEventListener('command-selected', ((e: CustomEvent) => {
                         mapping.commandId = e.detail.id;
                         mapping.commandName = e.detail.name;
@@ -447,7 +447,7 @@ class CommandSuggest extends AbstractInputSuggest<ObsidianCommand> {
         const appWithCommands = this.app as ObsidianAppWithCommands;
         const commands = appWithCommands.commands.listCommands();
         const lowerQuery = query.toLowerCase();
-        
+
         return commands
             .filter((cmd: ObsidianCommand) => cmd.name.toLowerCase().includes(lowerQuery));
     }
