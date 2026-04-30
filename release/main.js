@@ -223,7 +223,7 @@ var SettingsTab = class extends import_obsidian2.PluginSettingTab {
       "margin-top": "5px"
     });
     new import_obsidian2.Setting(contentEl).setName("Type").setDesc("Select whether this trigger inserts a template or executes a command.").addDropdown((dropdown) => dropdown.addOption("template", "Template").addOption("command", "Obsidian command").setValue(mapping.type || "template").onChange(async (value) => {
-      mapping.type = value;
+      await (mapping.type = value);
       this.display();
     }));
     new import_obsidian2.Setting(contentEl).setName("Trigger text").setDesc("The text that initiates this action.").addText((t) => t.setPlaceholder(symbol + "trigger").setValue(mapping.trigger).onChange((v) => {
