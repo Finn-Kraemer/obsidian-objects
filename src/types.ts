@@ -1,4 +1,22 @@
-import { TFile, Plugin } from 'obsidian';
+import { TFile, Plugin, App } from 'obsidian';
+
+/**
+ * Interface for an Obsidian Command.
+ */
+export interface ObsidianCommand {
+    id: string;
+    name: string;
+}
+
+/**
+ * Extension of the Obsidian App interface to include the internal commands API.
+ */
+export interface ObsidianAppWithCommands extends App {
+    commands: {
+        listCommands(): ObsidianCommand[];
+        executeCommandById(id: string): boolean;
+    };
+}
 
 /**
  * Defines a mapping between a trigger word and a template.

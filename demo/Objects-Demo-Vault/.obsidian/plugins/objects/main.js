@@ -222,9 +222,8 @@ var SettingsTab = class extends import_obsidian2.PluginSettingTab {
       "border-top": "1px solid var(--background-modifier-border)",
       "margin-top": "5px"
     });
-    new import_obsidian2.Setting(contentEl).setName("Type").setDesc("Select whether this trigger inserts a template or executes a command.").addDropdown((dropdown) => dropdown.addOption("template", "Template").addOption("command", "Obsidian Command").setValue(mapping.type || "template").onChange(async (value) => {
+    new import_obsidian2.Setting(contentEl).setName("Type").setDesc("Select whether this trigger inserts a template or executes a command.").addDropdown((dropdown) => dropdown.addOption("template", "Template").addOption("command", "Obsidian command").setValue(mapping.type || "template").onChange(async (value) => {
       mapping.type = value;
-      await this.plugin.saveSettings();
       this.display();
     }));
     new import_obsidian2.Setting(contentEl).setName("Trigger text").setDesc("The text that initiates this action.").addText((t) => t.setPlaceholder(symbol + "trigger").setValue(mapping.trigger).onChange((v) => {
@@ -236,7 +235,7 @@ var SettingsTab = class extends import_obsidian2.PluginSettingTab {
     if (mapping.type === "command") {
       new import_obsidian2.Setting(contentEl).setName("Command").setDesc("The Obsidian command to execute.").addText((t) => {
         new CommandSuggest(this.app, t.inputEl);
-        t.setPlaceholder("Search command...").setValue(mapping.commandName || "").onChange((v) => {
+        t.setPlaceholder("Search command...").setValue(mapping.commandName || "").onChange(() => {
           this.debouncedSave();
         });
         t.inputEl.addEventListener("command-selected", (e) => {
@@ -338,9 +337,10 @@ var CommandSuggest = class extends import_obsidian2.AbstractInputSuggest {
     this.inputEl = inputEl;
   }
   getSuggestions(query) {
-    const commands = this.app.commands.listCommands();
+    const appWithCommands = this.app;
+    const commands = appWithCommands.commands.listCommands();
     const lowerQuery = query.toLowerCase();
-    return commands.map((cmd) => ({ id: cmd.id, name: cmd.name })).filter((cmd) => cmd.name.toLowerCase().includes(lowerQuery));
+    return commands.filter((cmd) => cmd.name.toLowerCase().includes(lowerQuery));
   }
   renderSuggestion(cmd, el) {
     el.setText(cmd.name);
@@ -639,7 +639,8 @@ var TriggerSuggest = class extends import_obsidian5.EditorSuggest {
     if (!context) return;
     if (suggestion.type === "command" && suggestion.commandId) {
       context.editor.replaceRange("", context.start, context.end);
-      const success = this.app.commands.executeCommandById(suggestion.commandId);
+      const appWithCommands = this.app;
+      const success = appWithCommands.commands.executeCommandById(suggestion.commandId);
       if (!success) {
         new import_obsidian5.Notice(`Command "${suggestion.commandName || suggestion.commandId}" could not be executed.`);
       }

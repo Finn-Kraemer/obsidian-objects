@@ -10,7 +10,7 @@ import {
     TFile 
 } from 'obsidian';
 import ObjectsPlugin from './main';
-import { TriggerTemplateMapping } from './types';
+import { TriggerTemplateMapping, ObsidianAppWithCommands } from './types';
 import { TitleModal } from './modal';
 import { sanitizeFolderPath, sanitizeFileName } from './utils';
 
@@ -88,8 +88,8 @@ export class TriggerSuggest extends EditorSuggest<TriggerTemplateMapping> {
             context.editor.replaceRange('', context.start, context.end);
             
             // Execute the command
-            // eslint-disable-next-line @typescript-eslint/no-explicit-any
-            const success = (this.app as any).commands.executeCommandById(suggestion.commandId);
+            const appWithCommands = this.app as ObsidianAppWithCommands;
+            const success = appWithCommands.commands.executeCommandById(suggestion.commandId);
             if (!success) {
                 new Notice(`Command "${suggestion.commandName || suggestion.commandId}" could not be executed.`);
             }

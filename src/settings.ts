@@ -1,6 +1,6 @@
 import { App, PluginSettingTab, Setting, TFile, AbstractInputSuggest, debounce, TFolder } from 'obsidian';
 import ObjectsPlugin from './main';
-import { TriggerTemplateMapping } from './types';
+import { TriggerTemplateMapping, ObsidianAppWithCommands, ObsidianCommand } from './types';
 import { sanitizeFolderPath } from './utils';
 
 /**
@@ -13,7 +13,6 @@ export class SettingsTab extends PluginSettingTab {
     constructor(app: App, plugin: ObjectsPlugin) {
         super(app, plugin);
         this.plugin = plugin;
-        // Debounce saving to improve performance during rapid typing
         this.debouncedSave = debounce(() => { void this.plugin.saveSettings(); }, 500, true);
     }
 
@@ -77,7 +76,6 @@ export class SettingsTab extends PluginSettingTab {
                     if (oldSymbol !== newSymbol) {
                         this.plugin.settings.triggerSymbol = newSymbol;
 
-                        // Update all existing triggers with the new symbol
                         this.plugin.settings.triggerTemplates.forEach(t => {
                             if (t.trigger.startsWith(oldSymbol)) {
                                 t.trigger = newSymbol + t.trigger.substring(oldSymbol.length);
@@ -87,7 +85,7 @@ export class SettingsTab extends PluginSettingTab {
                         });
 
                         await this.plugin.saveSettings();
-                        this.display(); // Refresh to show updated triggers in the list
+                        this.display();
                     }
                 }));
 
@@ -278,10 +276,9 @@ export class SettingsTab extends PluginSettingTab {
                 .addOption('template', 'Template')
                 .addOption('command', 'Obsidian command')
                 .setValue(mapping.type || 'template')
-                .onChange(async (value: 'template' | 'command') => {
-                    mapping.type = value;
-                    await this.plugin.saveSettings();
-                    this.display(); // Refresh to show/hide relevant fields
+            .onChange(async (value: string) => {
+                mapping.type = value as 'template' | 'command';
+                    this.display();
                 }));
 
         new Setting(contentEl)
@@ -306,17 +303,15 @@ export class SettingsTab extends PluginSettingTab {
                     t.setPlaceholder('Search command...')
                         .setValue(mapping.commandName || '')
                         .onChange(() => {
-                            // The actual value is set by the suggester
                             this.debouncedSave();
                         });
                     
-                    // Hook into the suggester's selection to store the ID
-                    t.inputEl.addEventListener('command-selected', (e: CustomEvent) => {
+                    t.inputEl.addEventListener('command-selected', ((e: CustomEvent) => {
                         mapping.commandId = e.detail.id;
                         mapping.commandName = e.detail.name;
                         t.setValue(mapping.commandName || '');
                         this.debouncedSave();
-                    });
+                    }) as EventListener);
                 });
         } else {
             new Setting(contentEl)
@@ -443,28 +438,25 @@ export class FolderSuggest extends AbstractInputSuggest<string> {
 /**
  * Suggester for selecting Obsidian commands.
  */
-class CommandSuggest extends AbstractInputSuggest<{ id: string, name: string }> {
+class CommandSuggest extends AbstractInputSuggest<ObsidianCommand> {
     constructor(app: App, private inputEl: HTMLInputElement) {
         super(app, inputEl);
     }
 
-    getSuggestions(query: string): { id: string, name: string }[] {
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        const commands = (this.app as any).commands.listCommands();
+    getSuggestions(query: string): ObsidianCommand[] {
+        const appWithCommands = this.app as ObsidianAppWithCommands;
+        const commands = appWithCommands.commands.listCommands();
         const lowerQuery = query.toLowerCase();
         
         return commands
-            // eslint-disable-next-line @typescript-eslint/no-explicit-any
-            .map((cmd: any) => ({ id: cmd.id, name: cmd.name }))
-            // eslint-disable-next-line @typescript-eslint/no-explicit-any
-            .filter((cmd: any) => cmd.name.toLowerCase().includes(lowerQuery));
+            .filter((cmd: ObsidianCommand) => cmd.name.toLowerCase().includes(lowerQuery));
     }
 
-    renderSuggestion(cmd: { id: string, name: string }, el: HTMLElement): void {
+    renderSuggestion(cmd: ObsidianCommand, el: HTMLElement): void {
         el.setText(cmd.name);
     }
 
-    selectSuggestion(cmd: { id: string, name: string }): void {
+    selectSuggestion(cmd: ObsidianCommand): void {
         this.inputEl.value = cmd.name;
         this.inputEl.dispatchEvent(new CustomEvent('command-selected', { detail: cmd }));
         this.close();
