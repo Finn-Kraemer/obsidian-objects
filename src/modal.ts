@@ -155,10 +155,10 @@ class FileSuggest extends AbstractInputSuggest<TFile> {
 
                 // Check property
                 if (archivePropertyKey && archivePropertyValue) {
-                    const frontmatter = cache.frontmatter;
+                    const frontmatter = cache.frontmatter as Record<string, unknown> | undefined;
                     if (frontmatter) {
                         const val = frontmatter[archivePropertyKey];
-                        if (val !== undefined && String(val).toLowerCase() === archivePropertyValue.toLowerCase()) {
+                        if (val !== undefined && (typeof val === 'string' || typeof val === 'number' || typeof val === 'boolean') && String(val).toLowerCase() === archivePropertyValue.toLowerCase()) {
                             return false;
                         }
                     }
@@ -173,12 +173,12 @@ class FileSuggest extends AbstractInputSuggest<TFile> {
 
             // 3. Filter by mapping property if defined AND feature is enabled
             if (useProperties && propertyKey && propertyValue) {
-                const frontmatter = cache?.frontmatter;
+                const frontmatter = cache?.frontmatter as Record<string, unknown> | undefined;
                 if (!frontmatter) return false;
                 
                 const val = frontmatter[propertyKey];
                 // Support both exact match and tag match (if value starts with #)
-                if (String(val).toLowerCase() !== propertyValue.toLowerCase()) {
+                if (val !== undefined && (typeof val === 'string' || typeof val === 'number' || typeof val === 'boolean') && String(val).toLowerCase() !== propertyValue.toLowerCase()) {
                     return false;
                 }
             }

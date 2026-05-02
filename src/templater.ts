@@ -80,7 +80,7 @@ export class TemplaterHandler {
 
         if (newFile && propertyKey && propertyValue) {
             try {
-                await this.app.fileManager.processFrontMatter(newFile, (frontmatter) => {
+                await this.app.fileManager.processFrontMatter(newFile, (frontmatter: Record<string, unknown>) => {
                     frontmatter[propertyKey] = propertyValue;
                 });
             } catch (e) {

@@ -51,7 +51,7 @@ export default class ObjectsPlugin extends Plugin {
      * Loads saved settings and merges them with default values.
      */
     async loadSettings() {
-        const loadedData = await this.loadData();
+        const loadedData = (await this.loadData()) as Partial<ObsidianObjectsSettings>;
         this.settings = Object.assign({}, DEFAULT_SETTINGS, loadedData);
 
         // Migration: Ensure all existing mappings have necessary properties

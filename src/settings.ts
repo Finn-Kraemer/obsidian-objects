@@ -276,8 +276,8 @@ export class SettingsTab extends PluginSettingTab {
                 .addOption('template', 'Template')
                 .addOption('command', 'Obsidian command')
                 .setValue(mapping.type || 'template')
-                .onChange(async (value: string) => {
-                    await (mapping.type = value as 'template' | 'command');
+                .onChange((value: string) => {
+                    mapping.type = value as 'template' | 'command';
                     this.display();
                 }));
 
@@ -306,7 +306,7 @@ export class SettingsTab extends PluginSettingTab {
                             this.debouncedSave();
                         });
 
-                    t.inputEl.addEventListener('command-selected', ((e: CustomEvent) => {
+                    t.inputEl.addEventListener('command-selected', ((e: CustomEvent<ObsidianCommand>) => {
                         mapping.commandId = e.detail.id;
                         mapping.commandName = e.detail.name;
                         t.setValue(mapping.commandName || '');
