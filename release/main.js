@@ -222,8 +222,8 @@ var SettingsTab = class extends import_obsidian2.PluginSettingTab {
       "border-top": "1px solid var(--background-modifier-border)",
       "margin-top": "5px"
     });
-    new import_obsidian2.Setting(contentEl).setName("Type").setDesc("Select whether this trigger inserts a template or executes a command.").addDropdown((dropdown) => dropdown.addOption("template", "Template").addOption("command", "Obsidian command").setValue(mapping.type || "template").onChange(async (value) => {
-      await (mapping.type = value);
+    new import_obsidian2.Setting(contentEl).setName("Type").setDesc("Select whether this trigger inserts a template or executes a command.").addDropdown((dropdown) => dropdown.addOption("template", "Template").addOption("command", "Obsidian command").setValue(mapping.type || "template").onChange((value) => {
+      mapping.type = value;
       this.display();
     }));
     new import_obsidian2.Setting(contentEl).setName("Trigger text").setDesc("The text that initiates this action.").addText((t) => t.setPlaceholder(symbol + "trigger").setValue(mapping.trigger).onChange((v) => {
@@ -554,7 +554,7 @@ var FileSuggest = class extends import_obsidian4.AbstractInputSuggest {
           const frontmatter = cache.frontmatter;
           if (frontmatter) {
             const val = frontmatter[archivePropertyKey];
-            if (val !== void 0 && String(val).toLowerCase() === archivePropertyValue.toLowerCase()) {
+            if (val !== void 0 && (typeof val === "string" || typeof val === "number" || typeof val === "boolean") && String(val).toLowerCase() === archivePropertyValue.toLowerCase()) {
               return false;
             }
           }
@@ -568,7 +568,7 @@ var FileSuggest = class extends import_obsidian4.AbstractInputSuggest {
         const frontmatter = cache == null ? void 0 : cache.frontmatter;
         if (!frontmatter) return false;
         const val = frontmatter[propertyKey];
-        if (String(val).toLowerCase() !== propertyValue.toLowerCase()) {
+        if (val !== void 0 && (typeof val === "string" || typeof val === "number" || typeof val === "boolean") && String(val).toLowerCase() !== propertyValue.toLowerCase()) {
           return false;
         }
       }
