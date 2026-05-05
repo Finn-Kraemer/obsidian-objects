@@ -126,7 +126,7 @@ Objects is designed for both **Desktop** and **Mobile** environments.
 2. Click **Browse** and search for `Objects`.
 3. Click **Install**, then **Enable**.
 
-### Via BRAT (For Beta Testing)
+### Via BRAT (Recommended)
 1. Install the [BRAT plugin](https://github.com/TfTHacker/obsidian42-brat).
 2. Open **Settings** > **BRAT**.
 3. Click **Add Beta Plugin**.
