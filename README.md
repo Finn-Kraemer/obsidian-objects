@@ -121,7 +121,7 @@ Objects is designed for both **Desktop** and **Mobile** environments.
 
 ## Installation
 
-### Via Obsidian
+### Via Obsidian (Recommended once released)
 1. Open **Settings** > **Community Plugins**.
 2. Click **Browse** and search for `Objects`.
 3. Click **Install**, then **Enable**.
