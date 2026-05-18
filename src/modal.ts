@@ -1,4 +1,4 @@
-import { App, Modal, TextComponent, TFile, AbstractInputSuggest, getAllTags } from 'obsidian';
+import { App, Modal, TextComponent, TFile, AbstractInputSuggest, getAllTags, Setting } from 'obsidian';
 import ObjectsPlugin from './main';
 import { TriggerTemplateMapping } from './types';
 import { sanitizeFolderPath } from './utils';
@@ -8,7 +8,8 @@ import { sanitizeFolderPath } from './utils';
  */
 export class TitleModal extends Modal {
     private result: string = "";
-    private onSubmit: (result: string) => void;
+    private openNote: boolean = true;
+    private onSubmit: (result: string, openNote: boolean) => void;
     private mapping: TriggerTemplateMapping;
     private plugin: ObjectsPlugin;
     private isClosed: boolean = false;
@@ -17,13 +18,14 @@ export class TitleModal extends Modal {
      * @param app Obsidian App instance
      * @param plugin Reference to the main plugin
      * @param mapping The trigger mapping being used
-     * @param onSubmit Callback function on successful input
+     * @param onSubmit Callback function on successful input (returns title and openNote flag)
      */
-    constructor(app: App, plugin: ObjectsPlugin, mapping: TriggerTemplateMapping, onSubmit: (result: string) => void) {
+    constructor(app: App, plugin: ObjectsPlugin, mapping: TriggerTemplateMapping, onSubmit: (result: string, openNote: boolean) => void) {
         super(app);
         this.plugin = plugin;
         this.mapping = mapping;
         this.onSubmit = onSubmit;
+        this.openNote = plugin.settings.openNewNote;
     }
 
     /**
@@ -77,6 +79,15 @@ export class TitleModal extends Modal {
             }
         }, 50);
 
+        new Setting(contentEl)
+            .setName('Open note after creation')
+            .addToggle(toggle => toggle
+                .setValue(this.openNote)
+                .onChange(value => {
+                    this.openNote = value;
+                })
+            );
+
         // Buttons container using standard Obsidian class
         const buttonContainer = contentEl.createDiv({ cls: 'modal-button-container' });
 
@@ -98,7 +109,7 @@ export class TitleModal extends Modal {
 
         const trimmed = this.result.trim();
         if (trimmed.length > 0) {
-            this.onSubmit(trimmed);
+            this.onSubmit(trimmed, this.openNote);
             this.close();
         }
     }
