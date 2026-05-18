@@ -99,8 +99,8 @@ export class TriggerSuggest extends EditorSuggest<TriggerTemplateMapping> {
             return;
         }
 
-        new TitleModal(this.app, this.plugin, suggestion, (title) => {
-            void this.handleNoteCreation(suggestion, title, context);
+        new TitleModal(this.app, this.plugin, suggestion, (title, openNote) => {
+            void this.handleNoteCreation(suggestion, title, openNote, context);
         }).open();
     }
 
@@ -110,6 +110,7 @@ export class TriggerSuggest extends EditorSuggest<TriggerTemplateMapping> {
     private async handleNoteCreation(
         suggestion: TriggerTemplateMapping, 
         title: string, 
+        openNote: boolean,
         context: EditorSuggestContext
     ) {
         const editor = context.editor;
@@ -154,7 +155,7 @@ export class TriggerSuggest extends EditorSuggest<TriggerTemplateMapping> {
                 this.insertLinkAndFocus(editor, newFile, sourcePath, title, context);
                 
                 // Open newly created file in a new tab (pane) if configured
-                if (this.plugin.settings.openNewNote) {
+                if (openNote) {
                     await this.app.workspace.openLinkText(newFile.path, '', true);
                 }
                 
