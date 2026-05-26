@@ -52,8 +52,7 @@ var import_obsidian2 = require("obsidian");
 // src/utils.ts
 var import_obsidian = require("obsidian");
 function sanitizeFolderPath(path) {
-  if (!path || path.trim() === "")
-    return "";
+  if (!path || path.trim() === "") return "";
   let sanitized = (0, import_obsidian.normalizePath)(path.trim());
   sanitized = sanitized.replace(/^\/+|\/+$/g, "");
   return sanitized;
@@ -182,28 +181,14 @@ var SettingsTab = class extends import_obsidian2.PluginSettingTab {
     const useProperties = this.plugin.settings.useProperties;
     const detailsEl = containerEl.createEl("details");
     detailsEl.addClass("objects-mapping-details");
-    detailsEl.setCssProps({
-      "background": "var(--background-secondary-alt)",
-      "border": "1px solid var(--background-modifier-border)",
-      "border-radius": "6px",
-      "margin-bottom": "12px"
-    });
     if (!mapping.trigger || mapping.trigger === symbol) {
       detailsEl.setAttribute("open", "");
     }
     const summaryEl = detailsEl.createEl("summary");
-    summaryEl.setCssProps({
-      "cursor": "pointer",
-      "outline": "none",
-      "padding": "10px 15px",
-      "font-weight": "var(--font-bold)"
-    });
+    summaryEl.addClass("objects-mapping-summary");
     const titleText = mapping.trigger && mapping.trigger !== symbol ? `Mapping: ${mapping.trigger}` : `New Mapping (#${index + 1})`;
     const headerSetting = new import_obsidian2.Setting(summaryEl).setName(titleText);
-    headerSetting.settingEl.setCssProps({
-      "padding": "5px 10px",
-      "border": "none"
-    });
+    headerSetting.settingEl.addClass("objects-mapping-header");
     headerSetting.addToggle((t) => t.setValue(mapping.enabled).setTooltip(mapping.enabled ? "Disable mapping" : "Enable mapping").onChange(async (v) => {
       mapping.enabled = v;
       t.setTooltip(v ? "Disable mapping" : "Enable mapping");
@@ -218,11 +203,7 @@ var SettingsTab = class extends import_obsidian2.PluginSettingTab {
       e.stopPropagation();
     });
     const contentEl = detailsEl.createDiv();
-    contentEl.setCssProps({
-      "padding": "0 15px 15px 15px",
-      "border-top": "1px solid var(--background-modifier-border)",
-      "margin-top": "5px"
-    });
+    contentEl.addClass("objects-mapping-content");
     new import_obsidian2.Setting(contentEl).setName("Type").setDesc("Select whether this trigger inserts a template or executes a command.").addDropdown((dropdown) => dropdown.addOption("template", "Template").addOption("command", "Obsidian command").setValue(mapping.type || "template").onChange((value) => {
       mapping.type = value;
       this.display();
@@ -289,8 +270,7 @@ var TemplateSuggest = class extends import_obsidian2.AbstractInputSuggest {
   }
   getSuggestions(query) {
     const root = sanitizeFolderPath(this.plugin.settings.templateFolder);
-    if (!root)
-      return [];
+    if (!root) return [];
     const lower = query.toLowerCase();
     return this.app.vault.getMarkdownFiles().filter(
       (f) => {
@@ -470,19 +450,11 @@ var TitleModal = class extends import_obsidian4.Modal {
   onOpen() {
     const { contentEl, titleEl } = this;
     titleEl.setText("Create or link note");
-    contentEl.createEl("div", { text: "Enter note title:", cls: "objects-modal-description" });
+    contentEl.createDiv({ text: "Enter note title:", cls: "objects-modal-description" });
     const inputContainer = contentEl.createDiv({ cls: "objects-modal-input-container" });
-    inputContainer.setCssProps({
-      "margin-top": "10px",
-      "margin-bottom": "15px"
-    });
     const textComponent = new import_obsidian4.TextComponent(inputContainer);
     const inputEl = textComponent.inputEl;
     inputEl.addClass("objects-modal-input");
-    inputEl.setCssProps({
-      "width": "100%",
-      "box-sizing": "border-box"
-    });
     inputEl.placeholder = "My new note";
     inputEl.value = this.result;
     textComponent.onChange((value) => {
@@ -491,10 +463,10 @@ var TitleModal = class extends import_obsidian4.Modal {
     new FileSuggest(this.app, inputEl, this.plugin, this.mapping);
     inputEl.addEventListener("keydown", (e) => {
       if (e.key === "Enter") {
-        setTimeout(() => this.submit(), 100);
+        activeWindow.setTimeout(() => this.submit(), 100);
       }
     });
-    setTimeout(() => {
+    activeWindow.setTimeout(() => {
       if (!this.isClosed) {
         inputEl.focus();
       }
@@ -517,8 +489,7 @@ var TitleModal = class extends import_obsidian4.Modal {
    * Validates input and executes the submit callback.
    */
   submit() {
-    if (this.isClosed)
-      return;
+    if (this.isClosed) return;
     const trimmed = this.result.trim();
     if (trimmed.length > 0) {
       this.onSubmit(trimmed, this.openNote);
@@ -572,13 +543,11 @@ var FileSuggest = class extends import_obsidian4.AbstractInputSuggest {
       }
       if (normalizedTarget !== "") {
         const folderPath = file.parent ? sanitizeFolderPath(file.parent.path) : "";
-        if (folderPath !== normalizedTarget)
-          return false;
+        if (folderPath !== normalizedTarget) return false;
       }
       if (useProperties && propertyKey && propertyValue) {
         const frontmatter = cache == null ? void 0 : cache.frontmatter;
-        if (!frontmatter)
-          return false;
+        if (!frontmatter) return false;
         const val = frontmatter[propertyKey];
         if (val !== void 0 && (typeof val === "string" || typeof val === "number" || typeof val === "boolean") && String(val).toLowerCase() !== propertyValue.toLowerCase()) {
           return false;
@@ -614,8 +583,7 @@ var TriggerSuggest = class extends import_obsidian5.EditorSuggest {
     const escapedSymbol = symbol.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
     const regex = new RegExp(`${escapedSymbol}([^\\s]*)$`);
     const match = regex.exec(line);
-    if (!match)
-      return null;
+    if (!match) return null;
     const query = match[1];
     const triggerStart = line.length - match[0].length;
     if (triggerStart > 0) {
@@ -649,8 +617,7 @@ var TriggerSuggest = class extends import_obsidian5.EditorSuggest {
    */
   selectSuggestion(suggestion) {
     const context = this.context;
-    if (!context)
-      return;
+    if (!context) return;
     if (suggestion.type === "command" && suggestion.commandId) {
       context.editor.replaceRange("", context.start, context.end);
       const appWithCommands = this.app;
@@ -721,8 +688,7 @@ var TriggerSuggest = class extends import_obsidian5.EditorSuggest {
     const targetFolder = sanitizeFolderPath(folder);
     const specificPath = (0, import_obsidian5.normalizePath)(targetFolder ? `${targetFolder}/${title}.md` : `${title}.md`);
     const fileAtTable = this.app.vault.getAbstractFileByPath(specificPath);
-    if (fileAtTable instanceof import_obsidian5.TFile)
-      return fileAtTable;
+    if (fileAtTable instanceof import_obsidian5.TFile) return fileAtTable;
     if (!targetFolder) {
       return this.app.metadataCache.getFirstLinkpathDest(title, "");
     }
@@ -734,8 +700,7 @@ var TriggerSuggest = class extends import_obsidian5.EditorSuggest {
   getTemplateFile(suggestion) {
     var _a;
     const templateName = (_a = suggestion.templateName) == null ? void 0 : _a.trim();
-    if (!templateName)
-      return null;
+    if (!templateName) return null;
     const templateFolder = sanitizeFolderPath(this.plugin.settings.templateFolder);
     const templatePath = (0, import_obsidian5.normalizePath)(templateFolder ? `${templateFolder}/${templateName}.md` : `${templateName}.md`);
     const file = this.app.vault.getAbstractFileByPath(templatePath);

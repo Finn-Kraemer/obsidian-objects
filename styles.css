@@ -1,0 +1,38 @@
+.objects-modal-description {
+    /* Optional: any specific styles for the description */
+}
+
+.objects-modal-input-container {
+    margin-top: 10px;
+    margin-bottom: 15px;
+}
+
+.objects-modal-input {
+    width: 100%;
+    box-sizing: border-box;
+}
+
+.objects-mapping-details {
+    background: var(--background-secondary-alt);
+    border: 1px solid var(--background-modifier-border);
+    border-radius: 6px;
+    margin-bottom: 12px;
+}
+
+.objects-mapping-summary {
+    cursor: pointer;
+    outline: none;
+    padding: 10px 15px;
+    font-weight: var(--font-bold);
+}
+
+.objects-mapping-header {
+    padding: 5px 10px;
+    border: none;
+}
+
+.objects-mapping-content {
+    padding: 0 15px 15px 15px;
+    border-top: 1px solid var(--background-modifier-border);
+    margin-top: 5px;
+}

@@ -209,24 +209,13 @@ export class SettingsTab extends PluginSettingTab {
 
         const detailsEl = containerEl.createEl('details');
         detailsEl.addClass('objects-mapping-details');
-        detailsEl.setCssProps({
-            'background': 'var(--background-secondary-alt)',
-            'border': '1px solid var(--background-modifier-border)',
-            'border-radius': '6px',
-            'margin-bottom': '12px'
-        });
 
         if (!mapping.trigger || mapping.trigger === symbol) {
             detailsEl.setAttribute('open', '');
         }
 
         const summaryEl = detailsEl.createEl('summary');
-        summaryEl.setCssProps({
-            'cursor': 'pointer',
-            'outline': 'none',
-            'padding': '10px 15px',
-            'font-weight': 'var(--font-bold)'
-        });
+        summaryEl.addClass('objects-mapping-summary');
 
         const titleText = (mapping.trigger && mapping.trigger !== symbol)
             ? `Mapping: ${mapping.trigger}`
@@ -234,11 +223,7 @@ export class SettingsTab extends PluginSettingTab {
 
         const headerSetting = new Setting(summaryEl).setName(titleText);
 
-        headerSetting.settingEl.setCssProps({
-            'padding': '5px 10px',
-
-            'border': 'none'
-        });
+        headerSetting.settingEl.addClass('objects-mapping-header');
 
         headerSetting.addToggle(t => t
             .setValue(mapping.enabled)
@@ -263,11 +248,7 @@ export class SettingsTab extends PluginSettingTab {
         });
 
         const contentEl = detailsEl.createDiv();
-        contentEl.setCssProps({
-            'padding': '0 15px 15px 15px',
-            'border-top': '1px solid var(--background-modifier-border)',
-            'margin-top': '5px'
-        });
+        contentEl.addClass('objects-mapping-content');
 
         new Setting(contentEl)
             .setName('Type')

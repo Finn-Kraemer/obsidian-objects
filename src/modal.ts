@@ -37,22 +37,14 @@ export class TitleModal extends Modal {
         // Set the modal title
         titleEl.setText('Create or link note');
 
-        contentEl.createEl('div', { text: 'Enter note title:', cls: 'objects-modal-description' });
+        contentEl.createDiv({ text: 'Enter note title:', cls: 'objects-modal-description' });
         
         const inputContainer = contentEl.createDiv({ cls: 'objects-modal-input-container' });
-        inputContainer.setCssProps({
-            'margin-top': '10px',
-            'margin-bottom': '15px'
-        });
 
         const textComponent = new TextComponent(inputContainer);
         const inputEl = textComponent.inputEl;
         
         inputEl.addClass('objects-modal-input');
-        inputEl.setCssProps({ 
-            'width': '100%',
-            'box-sizing': 'border-box'
-        });
         inputEl.placeholder = 'My new note';
         inputEl.value = this.result;
         
@@ -67,13 +59,13 @@ export class TitleModal extends Modal {
         inputEl.addEventListener('keydown', (e) => {
             if (e.key === 'Enter') {
                 // Small delay to allow potential suggestion selection to finish
-                setTimeout(() => this.submit(), 100);
+                activeWindow.setTimeout(() => this.submit(), 100);
             }
         });
 
         // Use a small delay for focus to ensure modal is centered and stable
         // This prevents the suggester from miscalculating its position
-        setTimeout(() => {
+        activeWindow.setTimeout(() => {
             if (!this.isClosed) {
                 inputEl.focus();
             }

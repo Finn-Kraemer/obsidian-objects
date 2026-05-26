@@ -12,6 +12,7 @@ export default tseslint.config(
       globals: {
         ...globals.browser,
         ...globals.node,
+        activeWindow: 'readonly',
       },
       parserOptions: {
         project: ['./tsconfig.json'],
