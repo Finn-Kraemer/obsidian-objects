@@ -746,16 +746,13 @@ var ObjectsPlugin = class extends import_obsidian6.Plugin {
     this.templater = new TemplaterHandler(this.app);
     this.addSettingTab(new SettingsTab(this.app, this));
     this.registerEditorSuggest(new TriggerSuggest(this.app, this));
-    this.app.workspace.onLayoutReady(() => {
-      this.verifyIntegrations();
-    });
   }
   /**
    * Checks if necessary third-party plugins (like Templater) are active.
    */
-  verifyIntegrations() {
-    const api = this.templater.getApi();
-  }
+  //private verifyIntegrations() {
+  //    const api = this.templater.getApi();
+  //}
   /**
    * Loads saved settings and merges them with default values.
    */
