@@ -1,4 +1,4 @@
-import { Plugin, Notice } from 'obsidian';
+import { Plugin } from 'obsidian';
 import { ObsidianObjectsSettings, DEFAULT_SETTINGS } from './types';
 import { SettingsTab } from './settings';
 import { TemplaterHandler } from './templater';
@@ -30,22 +30,17 @@ export default class ObjectsPlugin extends Plugin {
         this.registerEditorSuggest(new TriggerSuggest(this.app, this));
 
         // Perform validations once the workspace layout is ready
-        this.app.workspace.onLayoutReady(() => {
-            this.verifyIntegrations();
-        });
+        //this.app.workspace.onLayoutReady(() => {
+        //    this.verifyIntegrations();
+        //});
     }
 
     /**
      * Checks if necessary third-party plugins (like Templater) are active.
-     * Displays a notice if Templater is missing.
      */
-    private verifyIntegrations() {
-        const api = this.templater.getApi();
-        if (!api) {
-            const message = 'Objects: The "Templater" plugin is not active.';
-            new Notice(message, 7000);
-        }
-    }
+    //private verifyIntegrations() {
+    //    const api = this.templater.getApi();
+    //}
 
     /**
      * Loads saved settings and merges them with default values.
