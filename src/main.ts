@@ -30,17 +30,17 @@ export default class ObjectsPlugin extends Plugin {
         this.registerEditorSuggest(new TriggerSuggest(this.app, this));
 
         // Perform validations once the workspace layout is ready
-        this.app.workspace.onLayoutReady(() => {
-            this.verifyIntegrations();
-        });
+        //this.app.workspace.onLayoutReady(() => {
+        //    this.verifyIntegrations();
+        //});
     }
 
     /**
      * Checks if necessary third-party plugins (like Templater) are active.
      */
-    private verifyIntegrations() {
-        const api = this.templater.getApi();
-    }
+    //private verifyIntegrations() {
+    //    const api = this.templater.getApi();
+    //}
 
     /**
      * Loads saved settings and merges them with default values.
