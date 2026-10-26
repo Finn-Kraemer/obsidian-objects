@@ -1,4 +1,4 @@
-import { App, Modal, TextComponent, TFile, AbstractInputSuggest, getAllTags, Setting } from 'obsidian';
+import { App, Modal, TextComponent, TFile, AbstractInputSuggest, FuzzySuggestModal, getAllTags, Setting } from 'obsidian';
 import ObjectsPlugin from './main';
 import { TriggerTemplateMapping } from './types';
 import { sanitizeFolderPath } from './utils';
@@ -19,13 +19,15 @@ export class TitleModal extends Modal {
      * @param plugin Reference to the main plugin
      * @param mapping The trigger mapping being used
      * @param onSubmit Callback function on successful input (returns title and openNote flag)
+     * @param initialTitle Optional prefilled title (e.g. the selected text in the editor)
      */
-    constructor(app: App, plugin: ObjectsPlugin, mapping: TriggerTemplateMapping, onSubmit: (result: string, openNote: boolean) => void) {
+    constructor(app: App, plugin: ObjectsPlugin, mapping: TriggerTemplateMapping, onSubmit: (result: string, openNote: boolean) => void, initialTitle: string = "") {
         super(app);
         this.plugin = plugin;
         this.mapping = mapping;
         this.onSubmit = onSubmit;
         this.openNote = plugin.settings.openNewNote;
+        this.result = initialTitle;
     }
 
     /**
@@ -112,6 +114,29 @@ export class TitleModal extends Modal {
     onClose() {
         this.isClosed = true;
         this.contentEl.empty();
+    }
+}
+
+/**
+ * Modal for picking an object type (template mapping), used when converting
+ * existing text into an object without typing a trigger.
+ */
+export class ObjectTypeModal extends FuzzySuggestModal<TriggerTemplateMapping> {
+    constructor(app: App, private mappings: TriggerTemplateMapping[], private onChoose: (mapping: TriggerTemplateMapping) => void) {
+        super(app);
+        this.setPlaceholder('Select object type');
+    }
+
+    getItems(): TriggerTemplateMapping[] {
+        return this.mappings;
+    }
+
+    getItemText(mapping: TriggerTemplateMapping): string {
+        return mapping.trigger;
+    }
+
+    onChooseItem(mapping: TriggerTemplateMapping) {
+        this.onChoose(mapping);
     }
 }
 
