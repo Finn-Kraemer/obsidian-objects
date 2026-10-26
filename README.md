@@ -89,6 +89,10 @@ The demo vault is pre-configured with sample templates, folders, and triggers to
 4.  **Confirm**: Hit `Enter`.
 5.  **Result**: A clean markdown link is inserted at your cursor. The note is created or linked in the background using your specified template and properties.
 
+### Convert existing text into an object
+
+Already wrote the word and want to turn it into an object? Select it (or just place the cursor on it) and run the **Objects: Convert selection to object** command from the command palette, or bind it to a hotkey. Pick the object type, confirm the prefilled title, and the text is replaced with a link to the new (or existing) note.
+
 > [!TIP]
 > **Trigger Conflicts**: If the `@` symbol is already being used by other plugins (like *Mention* or *Calendar*), you can easily change the **Trigger symbol** in the plugin settings to something else, like `#` or `!`. Existing mappings will update automatically.
 
