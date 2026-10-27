@@ -27,8 +27,10 @@ If you've experimented with apps like **Anytype** or **Capacities** because you 
 
 - **Unified Workflow**: Creation, organization, and linking happen in one single interaction.
 - **Smart Routing**: Notes are automatically moved to their designated folders based on their type.
+- **Convert Existing Text**: Turn a word you've already written into an object with a single command, no need to delete it and retype it after a trigger.
+- **Name Patterns**: Prefill note names per object type (e.g. `TODO: {{title}}`) and number them automatically (`TODO: 1`, `TODO: 2`, ...).
 - **Command Execution**: Map triggers to any Obsidian command (e.g., `@reload` to reload the app, `@daily` to open the daily note) to stay in your flow.
-- **Dynamic Content**: Uses a powerful fallback system (`{{title}}`, `{{date}}`, `{{time}}`) or integrates natively with [Templater](https://github.com/SilentVoid13/Templater).
+- **Dynamic Content**: Fills templates via a simple fallback system (`{{title}}`, `{{date}}`, `{{time}}`) or integrates natively with [Templater](https://github.com/SilentVoid13/Templater).
 - **Intelligent Linking**: If an object already exists, the plugin links to it instead of creating a duplicate. The creation modal suggests existing notes in real-time.
 - **Property Management**: Automatically add frontmatter properties (e.g., `type: project`) to newly created notes and filter suggestions by them.
 - **Archive Awareness**: Define tags or properties to mark notes as archived, excluding them from your active suggestion flow.
@@ -85,7 +87,7 @@ The demo vault is pre-configured with sample templates, folders, and triggers to
 
 1.  **Trigger**: Type your trigger symbol (default `@`) followed by the object type (e.g., `@project`) anywhere in your editor.
 2.  **Identify**: A suggestion list appears—select your desired object.
-3.  **Name**: A modal pops up. Type the name of your new object (e.g., "Deep Work Initiative"). The modal will suggest existing notes based on your folder and property mappings.
+3.  **Name**: A modal pops up. Type the name of your new object (e.g., "Deep Work Initiative"). The modal will suggest existing notes based on your folder and property mappings. If the mapping has a [name pattern](#name-patterns), the name is already prefilled. Use the **Open note after creation** toggle to decide whether the new note opens in a new tab.
 4.  **Confirm**: Hit `Enter`.
 5.  **Result**: A clean markdown link is inserted at your cursor. The note is created or linked in the background using your specified template and properties.
 
@@ -99,11 +101,31 @@ Give a mapping a **Name pattern** to prefill the note name in the creation modal
 | `{{counter}}` | Next free number among notes in the target folder that match the pattern; `{{counter:3}}` pads to `001` |
 | `{{date}}`, `{{time}}` | Current date (`YYYY-MM-DD`) and time (`HH:mm`); custom formats like `{{date:YYYY-MM}}` |
 
-The prefilled name can still be edited before creating the note.
+**Examples**
+
+| Name pattern | Prefilled name |
+| :--- | :--- |
+| `TODO: {{title}}` | `TODO: ` (you type the rest) |
+| `TODO: {{counter}}` | `TODO: 3` if `TODO: 1` and `TODO: 2` already exist |
+| `{{date}} {{title}}` | `2026-10-27 ` |
+| `Meeting {{date:YYYY-MM-DD}} {{counter:2}}` | `Meeting 2026-10-27 05` |
+
+Good to know:
+- The prefilled name can still be edited before creating the note.
+- Set the pattern per mapping in **Settings → Trigger mappings → Name pattern** (template mappings only).
+- `{{counter}}` counts all notes in the target folder that match the pattern. It keeps counting up and does not restart, e.g. for a new date.
+- Characters that aren't allowed in file names (like `:`) are replaced with `_` in the file name, so `TODO: 1` is saved as `TODO_ 1.md`. The link text still shows `TODO: 1`.
+- These placeholders are only for the note **name**. Template content uses its own placeholders (see *Dynamic Content* above) or Templater.
 
 ### Convert existing text into an object
 
-Already wrote the word and want to turn it into an object? Select it (or just place the cursor on it) and run the **Objects: Convert selection to object** command from the command palette, or bind it to a hotkey. Pick the object type, confirm the prefilled title, and the text is replaced with a link to the new (or existing) note.
+Already wrote the word and want to turn it into an object? No trigger needed:
+
+1.  **Select** the text, or just place the cursor on a word.
+2.  Run **Objects: Convert selection to object** from the command palette (`Ctrl/Cmd + P`). Tip: assign it a hotkey in **Settings → Hotkeys**.
+3.  **Pick the object type**. If only one template mapping is enabled, this step is skipped.
+4.  **Confirm the name**. It is prefilled with the selected text (inserted at `{{title}}` if the mapping has a name pattern).
+5.  The text is replaced with a link to the new note, or to the existing one if it already exists.
 
 > [!TIP]
 > **Trigger Conflicts**: If the `@` symbol is already being used by other plugins (like *Mention* or *Calendar*), you can easily change the **Trigger symbol** in the plugin settings to something else, like `#` or `!`. Existing mappings will update automatically.
@@ -122,6 +144,7 @@ Customize **Objects** to fit your personal knowledge management system:
 | **Property Support** | Enable `Use file properties` to add and filter by frontmatter keys and values. |
 | **Archive Behavior** | Define tags (e.g. `#archived`) or properties to exclude notes from suggestions. |
 | **Trigger Mappings** | Map triggers to specific templates, folders, and properties with an enable/disable toggle. |
+| **Name Pattern** | Per mapping: prefill the note name with text and placeholders like `{{title}}`, `{{counter}}`, `{{date}}`. See [Name patterns](#name-patterns). |
 | **Status Check** | Real-time validation of your Templater integration. |
 
 ---
