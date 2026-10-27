@@ -1,7 +1,8 @@
 name: Bump Version
 
 # Started manually from the GitHub UI (Actions > Bump Version > Run workflow).
-# Does the same as `npm run release:<bump>` locally, then builds the release.
+# Opens a pull request "Release x.y.z" with the version bump. Merging it into
+# main creates the tag and the GitHub release (see release.yml).
 on:
   workflow_dispatch:
     inputs:
@@ -16,8 +17,7 @@ on:
 
 permissions:
   contents: write
-  id-token: write
-  attestations: write
+  pull-requests: write
 
 concurrency:
   group: release
@@ -27,16 +27,20 @@ jobs:
     # Only release from main
     if: github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
-    outputs:
-      version: ${{ steps.bump.outputs.version }}
+    env:
+      # Optional personal access token. Pull requests opened with the default
+      # GITHUB_TOKEN do not trigger the required status checks.
+      GH_TOKEN: ${{ secrets.RELEASE_TOKEN || github.token }}
     steps:
       - name: Checkout code
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
+        with:
+          token: ${{ env.GH_TOKEN }}
 
       - name: Setup Node.js
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v5
         with:
-          node-version: '20'
+          node-version: '24'
           cache: 'npm'
 
       - name: Install dependencies
@@ -47,20 +51,24 @@ jobs:
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
 
-      # Runs preversion (build + lint) and the version script, then commits and tags
+      # Runs preversion (build + lint) and the version script, without commit and tag
       - name: Bump version
         id: bump
         run: |
-          npm version ${{ inputs.bump }}
+          npm version ${{ inputs.bump }} --no-git-tag-version
           echo "version=$(node -p "require('./package.json').version")" >> "$GITHUB_OUTPUT"
 
-      - name: Push commit and tag
-        run: git push origin HEAD:main "refs/tags/${{ steps.bump.outputs.version }}"
-
-  # A tag pushed with GITHUB_TOKEN does not trigger other workflows,
-  # so the release workflow is called directly.
-  release:
-    needs: bump
-    uses: ./.github/workflows/release.yml
-    with:
-      tag: ${{ needs.bump.outputs.version }}
+      - name: Open release pull request
+        env:
+          VERSION: ${{ steps.bump.outputs.version }}
+        run: |
+          if git ls-remote --exit-code --tags origin "refs/tags/$VERSION" > /dev/null; then
+            echo "::error::Tag $VERSION already exists."
+            exit 1
+          fi
+          git checkout -b "release/$VERSION"
+          git commit -am "$VERSION"
+          git push origin "release/$VERSION"
+          gh pr create --base main --head "release/$VERSION" \
+            --title "Release $VERSION" \
+            --body "Bumps the version to $VERSION. Merging this pull request creates the tag \`$VERSION\` and the GitHub release."

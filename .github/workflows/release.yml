@@ -2,55 +2,78 @@ name: Release Plugin
 
 on:
   push:
+    # A merged release pull request: releases the version in package.json if it has no tag yet
+    branches:
+      - main
     tags:
       - '*' # Triggers on any tag push (e.g., v1.0.0)
-  # Called by the Bump Version workflow with the tag it just pushed
-  workflow_call:
-    inputs:
-      tag:
-        description: 'Tag to release'
-        type: string
-        required: true
 
 permissions:
   contents: write
   id-token: write
   attestations: write
 
+concurrency:
+  group: release-plugin
+
 jobs:
+  check:
+    runs-on: ubuntu-latest
+    outputs:
+      tag: ${{ steps.tag.outputs.tag }}
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v5
+
+      - name: Determine tag
+        id: tag
+        run: |
+          if [ "${{ github.ref_type }}" = "tag" ]; then
+            echo "tag=${{ github.ref_name }}" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          VERSION=$(node -p "require('./package.json').version")
+          if git ls-remote --exit-code --tags origin "refs/tags/$VERSION" > /dev/null; then
+            echo "Version $VERSION is already tagged, nothing to release."
+          else
+            echo "tag=$VERSION" >> "$GITHUB_OUTPUT"
+          fi
+
   build:
+    needs: check
+    if: needs.check.outputs.tag != ''
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
-        uses: actions/checkout@v4
-        with:
-          ref: ${{ inputs.tag || github.ref }}
+        uses: actions/checkout@v5
 
       - name: Setup Node.js
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v5
         with:
-          node-version: '20'
+          node-version: '24'
           cache: 'npm'
 
       - name: Install dependencies
-        run: npm install
+        run: npm ci
 
       - name: Build plugin
         run: npm run build
 
       - name: Generate artifact attestation
-        uses: actions/attest-build-provenance@v2
+        uses: actions/attest-build-provenance@v3
         with:
           subject-path: |
             release/main.js
             release/manifest.json
             release/styles.css
 
+      # Creates the tag on this commit if it does not exist yet
       - name: Create GitHub Release
         id: create_release
         uses: softprops/action-gh-release@v2
         with:
-          tag_name: ${{ inputs.tag || github.ref_name }}
+          tag_name: ${{ needs.check.outputs.tag }}
+          target_commitish: ${{ github.sha }}
           files: |
             release/main.js
             release/manifest.json
