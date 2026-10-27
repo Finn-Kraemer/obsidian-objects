@@ -24,8 +24,8 @@ concurrency:
 
 jobs:
   bump:
-    # Only release from main
-    if: github.ref == 'refs/heads/main'
+    # Only release from main, and only when started (or re-run) by the repository owner
+    if: github.ref == 'refs/heads/main' && github.triggering_actor == github.repository_owner
     runs-on: ubuntu-latest
     env:
       # Optional personal access token. Pull requests opened with the default
@@ -68,7 +68,12 @@ jobs:
           fi
           git checkout -b "release/$VERSION"
           git commit -am "$VERSION"
-          git push origin "release/$VERSION"
-          gh pr create --base main --head "release/$VERSION" \
-            --title "Release $VERSION" \
-            --body "Bumps the version to $VERSION. Merging this pull request creates the tag \`$VERSION\` and the GitHub release."
+          # Overwrite a release branch left over from an earlier run
+          git push --force origin "release/$VERSION"
+          if [ "$(gh pr view "release/$VERSION" --json state --jq .state 2>/dev/null)" = "OPEN" ]; then
+            echo "Release pull request for $VERSION is already open and was updated."
+          else
+            gh pr create --base main --head "release/$VERSION" \
+              --title "Release $VERSION" \
+              --body "Bumps the version to $VERSION. Merging this pull request creates the tag \`$VERSION\` and the GitHub release."
+          fi
