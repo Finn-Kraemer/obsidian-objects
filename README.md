@@ -124,7 +124,7 @@ Already wrote the word and want to turn it into an object? No trigger needed:
 1.  **Select** the text, or just place the cursor on a word.
 2.  Run **Objects: Convert selection to object** from the command palette (`Ctrl/Cmd + P`). Tip: assign it a hotkey in **Settings → Hotkeys**.
 3.  **Pick the object type**. If only one template mapping is enabled, this step is skipped.
-4.  **Confirm the name**. It is prefilled with the selected text (inserted at `{{title}}` if the mapping has a name pattern).
+4.  **Confirm the name**. It is prefilled with the selected text. If the mapping has a name pattern, the selected text is inserted at `{{title}}`. A pattern without `{{title}}` (e.g. `TODO: {{counter}}`) prefills only the pattern, without the selected text.
 5.  The text is replaced with a link to the new note, or to the existing one if it already exists.
 
 > [!TIP]
