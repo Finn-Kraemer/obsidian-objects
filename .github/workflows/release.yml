@@ -4,6 +4,13 @@ on:
   push:
     tags:
       - '*' # Triggers on any tag push (e.g., v1.0.0)
+  # Called by the Bump Version workflow with the tag it just pushed
+  workflow_call:
+    inputs:
+      tag:
+        description: 'Tag to release'
+        type: string
+        required: true
 
 permissions:
   contents: write
@@ -16,6 +23,8 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.tag || github.ref }}
 
       - name: Setup Node.js
         uses: actions/setup-node@v4
@@ -41,6 +50,7 @@ jobs:
         id: create_release
         uses: softprops/action-gh-release@v2
         with:
+          tag_name: ${{ inputs.tag || github.ref_name }}
           files: |
             release/main.js
             release/manifest.json
