@@ -321,6 +321,17 @@ export class SettingsTab extends PluginSettingTab {
                         });
                 });
 
+            new Setting(contentEl)
+                .setName('Name pattern')
+                .setDesc('Prefills the note name. Placeholders: {{title}} (your input, cursor position), {{counter}} (next free number, {{counter:3}} for 001), {{date}}, {{time}} (optionally with a format, e.g. {{date:YYYY-MM}}).')
+                .addText(t => t
+                    .setPlaceholder('TODO: {{counter}}')
+                    .setValue(mapping.namePattern || '')
+                    .onChange(v => {
+                        mapping.namePattern = v;
+                        this.debouncedSave();
+                    }));
+
             if (useProperties) {
                 new Setting(contentEl)
                     .setName('Property key')

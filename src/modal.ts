@@ -1,7 +1,8 @@
 import { App, Modal, TextComponent, TFile, AbstractInputSuggest, FuzzySuggestModal, getAllTags, Setting } from 'obsidian';
 import ObjectsPlugin from './main';
 import { TriggerTemplateMapping } from './types';
-import { sanitizeFolderPath } from './utils';
+import { sanitizeFolderPath, sanitizeFileName } from './utils';
+import { renderNamePattern } from './namePattern';
 
 /**
  * Modal for entering a title for a new or linked note.
@@ -13,13 +14,16 @@ export class TitleModal extends Modal {
     private mapping: TriggerTemplateMapping;
     private plugin: ObjectsPlugin;
     private isClosed: boolean = false;
+    /** Cursor position in the prefilled title */
+    private cursor: number;
 
     /**
      * @param app Obsidian App instance
      * @param plugin Reference to the main plugin
      * @param mapping The trigger mapping being used
      * @param onSubmit Callback function on successful input (returns title and openNote flag)
-     * @param initialTitle Optional prefilled title (e.g. the selected text in the editor)
+     * @param initialTitle Optional prefilled title (e.g. the selected text in the editor).
+     *                     If the mapping has a name pattern, it is inserted at {{title}}.
      */
     constructor(app: App, plugin: ObjectsPlugin, mapping: TriggerTemplateMapping, onSubmit: (result: string, openNote: boolean) => void, initialTitle: string = "") {
         super(app);
@@ -28,6 +32,14 @@ export class TitleModal extends Modal {
         this.onSubmit = onSubmit;
         this.openNote = plugin.settings.openNewNote;
         this.result = initialTitle;
+        this.cursor = initialTitle.length;
+
+        if (mapping.namePattern) {
+            const folder = mapping.outputPath || plugin.settings.defaultOutputPath;
+            const rendered = renderNamePattern(app, mapping.namePattern, initialTitle, folder);
+            this.result = rendered.value;
+            this.cursor = rendered.cursor;
+        }
     }
 
     /**
@@ -70,6 +82,8 @@ export class TitleModal extends Modal {
         activeWindow.setTimeout(() => {
             if (!this.isClosed) {
                 inputEl.focus();
+                // Place the cursor where the title goes in the name pattern
+                inputEl.setSelectionRange(this.cursor, this.cursor);
             }
         }, 50);
 
@@ -157,7 +171,8 @@ class FileSuggest extends AbstractInputSuggest<TFile> {
      * Filters all markdown files based on the target folder and query.
      */
     getSuggestions(query: string): TFile[] {
-        const lowerCaseQuery = query.toLowerCase();
+        // Compare against file names, in which characters like ":" are replaced
+        const lowerCaseQuery = sanitizeFileName(query).toLowerCase();
         const files = this.app.vault.getMarkdownFiles();
         
         const folder = this.mapping.outputPath || this.plugin.settings.defaultOutputPath;

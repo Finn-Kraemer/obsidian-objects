@@ -34,6 +34,8 @@ export interface TriggerTemplateMapping {
     propertyKey?: string;
     /** Optional property value in frontmatter (e.g., "#project") */
     propertyValue?: string;
+    /** Optional pattern for the note name (e.g., "TODO: {{counter}}" or "{{date}} {{title}}") */
+    namePattern?: string;
     /** Obsidian Command ID to execute */
     commandId?: string;
     /** Obsidian Command Name to display */

@@ -89,6 +89,18 @@ The demo vault is pre-configured with sample templates, folders, and triggers to
 4.  **Confirm**: Hit `Enter`.
 5.  **Result**: A clean markdown link is inserted at your cursor. The note is created or linked in the background using your specified template and properties.
 
+### Name patterns
+
+Give a mapping a **Name pattern** to prefill the note name in the creation modal, e.g. `TODO: {{title}}` so every to-do starts with "TODO:", or `TODO: {{counter}}` to number them automatically (`TODO: 1`, `TODO: 2`, ...).
+
+| Placeholder | Result |
+| :--- | :--- |
+| `{{title}}` | Your input (or the selected text); the cursor is placed here |
+| `{{counter}}` | Next free number among notes in the target folder that match the pattern; `{{counter:3}}` pads to `001` |
+| `{{date}}`, `{{time}}` | Current date (`YYYY-MM-DD`) and time (`HH:mm`); custom formats like `{{date:YYYY-MM}}` |
+
+The prefilled name can still be edited before creating the note.
+
 ### Convert existing text into an object
 
 Already wrote the word and want to turn it into an object? Select it (or just place the cursor on it) and run the **Objects: Convert selection to object** command from the command palette, or bind it to a hotkey. Pick the object type, confirm the prefilled title, and the text is replaced with a link to the new (or existing) note.
