@@ -27,7 +27,7 @@ __export(main_exports, {
   default: () => ObjectsPlugin
 });
 module.exports = __toCommonJS(main_exports);
-var import_obsidian7 = require("obsidian");
+var import_obsidian8 = require("obsidian");
 
 // src/types.ts
 var DEFAULT_SETTINGS = {
@@ -242,6 +242,10 @@ var SettingsTab = class extends import_obsidian2.PluginSettingTab {
           this.debouncedSave();
         });
       });
+      new import_obsidian2.Setting(contentEl).setName("Name pattern").setDesc("Prefills the note name. Placeholders: {{title}} (your input, cursor position), {{counter}} (next free number, {{counter:3}} for 001), {{date}}, {{time}} (optionally with a format, e.g. {{date:YYYY-MM}}).").addText((t) => t.setPlaceholder("TODO: {{counter}}").setValue(mapping.namePattern || "").onChange((v) => {
+        mapping.namePattern = v;
+        this.debouncedSave();
+      }));
       if (useProperties) {
         new import_obsidian2.Setting(contentEl).setName("Property key").setDesc("Frontmatter property key.").addText((t) => t.setPlaceholder("Key").setValue(mapping.propertyKey || "").onChange((v) => {
           mapping.propertyKey = v;
@@ -423,17 +427,93 @@ var TemplaterHandler = class {
 };
 
 // src/suggester.ts
-var import_obsidian5 = require("obsidian");
+var import_obsidian6 = require("obsidian");
 
 // src/modal.ts
+var import_obsidian5 = require("obsidian");
+
+// src/namePattern.ts
 var import_obsidian4 = require("obsidian");
-var TitleModal = class extends import_obsidian4.Modal {
+var PLACEHOLDER_REGEX = /\{\{(title|counter|date|time)(?::([^}]*))?\}\}/g;
+var INVALID_FILENAME_CHARS = /[\\/:"*?<>|]/g;
+function renderNamePattern(app, pattern, title, folder) {
+  const now = (0, import_obsidian4.moment)();
+  let counter = null;
+  let value = "";
+  let cursor = -1;
+  let lastIndex = 0;
+  for (const match of pattern.matchAll(PLACEHOLDER_REGEX)) {
+    value += pattern.slice(lastIndex, match.index);
+    lastIndex = match.index + match[0].length;
+    const [, name, arg] = match;
+    switch (name) {
+      case "title":
+        value += title;
+        cursor = value.length;
+        break;
+      case "counter": {
+        if (counter === null) counter = findNextCounter(app, pattern, folder);
+        const width = parseInt(arg != null ? arg : "", 10);
+        value += String(counter).padStart(isNaN(width) ? 0 : width, "0");
+        break;
+      }
+      case "date":
+        value += now.format(arg || "YYYY-MM-DD");
+        break;
+      case "time":
+        value += now.format(arg || "HH:mm");
+        break;
+    }
+  }
+  value += pattern.slice(lastIndex);
+  return { value, cursor: cursor === -1 ? value.length : cursor };
+}
+function findNextCounter(app, pattern, folder) {
+  var _a, _b;
+  const regex = buildCounterRegex(pattern);
+  const targetFolder = sanitizeFolderPath(folder);
+  let max = 0;
+  for (const file of app.vault.getMarkdownFiles()) {
+    if (targetFolder && sanitizeFolderPath((_b = (_a = file.parent) == null ? void 0 : _a.path) != null ? _b : "") !== targetFolder) continue;
+    const match = regex.exec(file.basename);
+    if (match == null ? void 0 : match[1]) {
+      max = Math.max(max, parseInt(match[1], 10));
+    }
+  }
+  return max + 1;
+}
+function buildCounterRegex(pattern) {
+  let source = "";
+  let lastIndex = 0;
+  let hasCounter = false;
+  for (const match of pattern.matchAll(PLACEHOLDER_REGEX)) {
+    source += escapeLiteral(pattern.slice(lastIndex, match.index));
+    lastIndex = match.index + match[0].length;
+    if (match[1] === "counter" && !hasCounter) {
+      source += "(\\d+)";
+      hasCounter = true;
+    } else if (match[1] === "counter") {
+      source += "\\d+";
+    } else {
+      source += ".*?";
+    }
+  }
+  source += escapeLiteral(pattern.slice(lastIndex));
+  return new RegExp(`^${source.trim()}$`);
+}
+function escapeLiteral(text) {
+  return text.replace(INVALID_FILENAME_CHARS, "_").replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+}
+
+// src/modal.ts
+var TitleModal = class extends import_obsidian5.Modal {
   /**
    * @param app Obsidian App instance
    * @param plugin Reference to the main plugin
    * @param mapping The trigger mapping being used
    * @param onSubmit Callback function on successful input (returns title and openNote flag)
-   * @param initialTitle Optional prefilled title (e.g. the selected text in the editor)
+   * @param initialTitle Optional prefilled title (e.g. the selected text in the editor).
+   *                     If the mapping has a name pattern, it is inserted at {{title}}.
    */
   constructor(app, plugin, mapping, onSubmit, initialTitle = "") {
     super(app);
@@ -445,6 +525,13 @@ var TitleModal = class extends import_obsidian4.Modal {
     this.onSubmit = onSubmit;
     this.openNote = plugin.settings.openNewNote;
     this.result = initialTitle;
+    this.cursor = initialTitle.length;
+    if (mapping.namePattern) {
+      const folder = mapping.outputPath || plugin.settings.defaultOutputPath;
+      const rendered = renderNamePattern(app, mapping.namePattern, initialTitle, folder);
+      this.result = rendered.value;
+      this.cursor = rendered.cursor;
+    }
   }
   /**
    * Creates the modal UI.
@@ -454,7 +541,7 @@ var TitleModal = class extends import_obsidian4.Modal {
     titleEl.setText("Create or link note");
     contentEl.createDiv({ text: "Enter note title:", cls: "objects-modal-description" });
     const inputContainer = contentEl.createDiv({ cls: "objects-modal-input-container" });
-    const textComponent = new import_obsidian4.TextComponent(inputContainer);
+    const textComponent = new import_obsidian5.TextComponent(inputContainer);
     const inputEl = textComponent.inputEl;
     inputEl.addClass("objects-modal-input");
     inputEl.placeholder = "My new note";
@@ -471,9 +558,10 @@ var TitleModal = class extends import_obsidian4.Modal {
     activeWindow.setTimeout(() => {
       if (!this.isClosed) {
         inputEl.focus();
+        inputEl.setSelectionRange(this.cursor, this.cursor);
       }
     }, 50);
-    new import_obsidian4.Setting(contentEl).setName("Open note after creation").addToggle(
+    new import_obsidian5.Setting(contentEl).setName("Open note after creation").addToggle(
       (toggle) => toggle.setValue(this.openNote).onChange((value) => {
         this.openNote = value;
       })
@@ -506,7 +594,7 @@ var TitleModal = class extends import_obsidian4.Modal {
     this.contentEl.empty();
   }
 };
-var ObjectTypeModal = class extends import_obsidian4.FuzzySuggestModal {
+var ObjectTypeModal = class extends import_obsidian5.FuzzySuggestModal {
   constructor(app, mappings, onChoose) {
     super(app);
     this.mappings = mappings;
@@ -523,7 +611,7 @@ var ObjectTypeModal = class extends import_obsidian4.FuzzySuggestModal {
     this.onChoose(mapping);
   }
 };
-var FileSuggest = class extends import_obsidian4.AbstractInputSuggest {
+var FileSuggest = class extends import_obsidian5.AbstractInputSuggest {
   constructor(app, inputEl, plugin, mapping) {
     super(app, inputEl);
     this.inputEl = inputEl;
@@ -534,7 +622,7 @@ var FileSuggest = class extends import_obsidian4.AbstractInputSuggest {
    * Filters all markdown files based on the target folder and query.
    */
   getSuggestions(query) {
-    const lowerCaseQuery = query.toLowerCase();
+    const lowerCaseQuery = sanitizeFileName(query).toLowerCase();
     const files = this.app.vault.getMarkdownFiles();
     const folder = this.mapping.outputPath || this.plugin.settings.defaultOutputPath;
     const normalizedTarget = sanitizeFolderPath(folder);
@@ -545,7 +633,7 @@ var FileSuggest = class extends import_obsidian4.AbstractInputSuggest {
       const cache = this.app.metadataCache.getFileCache(file);
       if (cache) {
         if (normalizedArchiveTag) {
-          const tags = (0, import_obsidian4.getAllTags)(cache);
+          const tags = (0, import_obsidian5.getAllTags)(cache);
           if (tags && tags.some((tag) => tag.replace(/^#/, "").toLowerCase() === normalizedArchiveTag)) {
             return false;
           }
@@ -587,7 +675,7 @@ var FileSuggest = class extends import_obsidian4.AbstractInputSuggest {
 };
 
 // src/suggester.ts
-var TriggerSuggest = class extends import_obsidian5.EditorSuggest {
+var TriggerSuggest = class extends import_obsidian6.EditorSuggest {
   constructor(app, plugin) {
     super(app);
     this.plugin = plugin;
@@ -642,7 +730,7 @@ var TriggerSuggest = class extends import_obsidian5.EditorSuggest {
       const appWithCommands = this.app;
       const success = appWithCommands.commands.executeCommandById(suggestion.commandId);
       if (!success) {
-        new import_obsidian5.Notice(`Command "${suggestion.commandName || suggestion.commandId}" could not be executed.`);
+        new import_obsidian6.Notice(`Command "${suggestion.commandName || suggestion.commandId}" could not be executed.`);
       }
       context.editor.focus();
       return;
@@ -654,7 +742,7 @@ var TriggerSuggest = class extends import_obsidian5.EditorSuggest {
 };
 
 // src/creator.ts
-var import_obsidian6 = require("obsidian");
+var import_obsidian7 = require("obsidian");
 var ObjectCreator = class {
   constructor(app, plugin) {
     this.app = app;
@@ -671,12 +759,12 @@ var ObjectCreator = class {
     const existingFile = this.findExistingFile(sanitizedTitle, suggestion);
     if (existingFile) {
       this.insertLinkAndFocus(editor, existingFile, sourcePath, title, start, end);
-      new import_obsidian6.Notice(`Linked to existing note: "${existingFile.basename}"`);
+      new import_obsidian7.Notice(`Linked to existing note: "${existingFile.basename}"`);
       return;
     }
     const templateFile = this.getTemplateFile(suggestion);
     if (!templateFile && suggestion.templateName) {
-      new import_obsidian6.Notice(`Template "${suggestion.templateName}" not found. Creating note without template.`, 3e3);
+      new import_obsidian7.Notice(`Template "${suggestion.templateName}" not found. Creating note without template.`, 3e3);
     }
     try {
       const folder = suggestion.outputPath || this.plugin.settings.defaultOutputPath;
@@ -697,13 +785,13 @@ var ObjectCreator = class {
         if (openNote) {
           await this.app.workspace.openLinkText(newFile.path, "", true);
         }
-        new import_obsidian6.Notice(`Created new note: "${newFile.basename}"`);
+        new import_obsidian7.Notice(`Created new note: "${newFile.basename}"`);
       } else {
-        new import_obsidian6.Notice("Error: failed to create file.", 5e3);
+        new import_obsidian7.Notice("Error: failed to create file.", 5e3);
       }
     } catch (e) {
       console.warn("Objects: Error in creation process:", e);
-      new import_obsidian6.Notice("Error creating note. See console for details.");
+      new import_obsidian7.Notice("Error creating note. See console for details.");
     }
   }
   /**
@@ -714,9 +802,9 @@ var ObjectCreator = class {
   findExistingFile(title, suggestion) {
     const folder = suggestion.outputPath || this.plugin.settings.defaultOutputPath;
     const targetFolder = sanitizeFolderPath(folder);
-    const specificPath = (0, import_obsidian6.normalizePath)(targetFolder ? `${targetFolder}/${title}.md` : `${title}.md`);
+    const specificPath = (0, import_obsidian7.normalizePath)(targetFolder ? `${targetFolder}/${title}.md` : `${title}.md`);
     const fileAtTable = this.app.vault.getAbstractFileByPath(specificPath);
-    if (fileAtTable instanceof import_obsidian6.TFile) return fileAtTable;
+    if (fileAtTable instanceof import_obsidian7.TFile) return fileAtTable;
     if (!targetFolder) {
       return this.app.metadataCache.getFirstLinkpathDest(title, "");
     }
@@ -730,9 +818,9 @@ var ObjectCreator = class {
     const templateName = (_a = suggestion.templateName) == null ? void 0 : _a.trim();
     if (!templateName) return null;
     const templateFolder = sanitizeFolderPath(this.plugin.settings.templateFolder);
-    const templatePath = (0, import_obsidian6.normalizePath)(templateFolder ? `${templateFolder}/${templateName}.md` : `${templateName}.md`);
+    const templatePath = (0, import_obsidian7.normalizePath)(templateFolder ? `${templateFolder}/${templateName}.md` : `${templateName}.md`);
     const file = this.app.vault.getAbstractFileByPath(templatePath);
-    return file instanceof import_obsidian6.TFile ? file : null;
+    return file instanceof import_obsidian7.TFile ? file : null;
   }
   /**
    * Inserts the markdown link into the editor and sets the focus.
@@ -750,7 +838,7 @@ var ObjectCreator = class {
 };
 
 // src/main.ts
-var ObjectsPlugin = class extends import_obsidian7.Plugin {
+var ObjectsPlugin = class extends import_obsidian8.Plugin {
   constructor() {
     super(...arguments);
     /** Current configuration of the plugin */
@@ -779,7 +867,7 @@ var ObjectsPlugin = class extends import_obsidian7.Plugin {
   convertSelectionToObject(editor) {
     const mappings = this.settings.triggerTemplates.filter((t) => t.enabled && t.type === "template");
     if (mappings.length === 0) {
-      new import_obsidian7.Notice("No enabled object types configured.");
+      new import_obsidian8.Notice("No enabled object types configured.");
       return;
     }
     let from = editor.getCursor("from");
