@@ -27,7 +27,7 @@ __export(main_exports, {
   default: () => ObjectsPlugin
 });
 module.exports = __toCommonJS(main_exports);
-var import_obsidian6 = require("obsidian");
+var import_obsidian7 = require("obsidian");
 
 // src/types.ts
 var DEFAULT_SETTINGS = {
@@ -52,8 +52,7 @@ var import_obsidian2 = require("obsidian");
 // src/utils.ts
 var import_obsidian = require("obsidian");
 function sanitizeFolderPath(path) {
-  if (!path || path.trim() === "")
-    return "";
+  if (!path || path.trim() === "") return "";
   let sanitized = (0, import_obsidian.normalizePath)(path.trim());
   sanitized = sanitized.replace(/^\/+|\/+$/g, "");
   return sanitized;
@@ -271,8 +270,7 @@ var TemplateSuggest = class extends import_obsidian2.AbstractInputSuggest {
   }
   getSuggestions(query) {
     const root = sanitizeFolderPath(this.plugin.settings.templateFolder);
-    if (!root)
-      return [];
+    if (!root) return [];
     const lower = query.toLowerCase();
     return this.app.vault.getMarkdownFiles().filter(
       (f) => {
@@ -435,8 +433,9 @@ var TitleModal = class extends import_obsidian4.Modal {
    * @param plugin Reference to the main plugin
    * @param mapping The trigger mapping being used
    * @param onSubmit Callback function on successful input (returns title and openNote flag)
+   * @param initialTitle Optional prefilled title (e.g. the selected text in the editor)
    */
-  constructor(app, plugin, mapping, onSubmit) {
+  constructor(app, plugin, mapping, onSubmit, initialTitle = "") {
     super(app);
     this.result = "";
     this.openNote = true;
@@ -445,6 +444,7 @@ var TitleModal = class extends import_obsidian4.Modal {
     this.mapping = mapping;
     this.onSubmit = onSubmit;
     this.openNote = plugin.settings.openNewNote;
+    this.result = initialTitle;
   }
   /**
    * Creates the modal UI.
@@ -491,8 +491,7 @@ var TitleModal = class extends import_obsidian4.Modal {
    * Validates input and executes the submit callback.
    */
   submit() {
-    if (this.isClosed)
-      return;
+    if (this.isClosed) return;
     const trimmed = this.result.trim();
     if (trimmed.length > 0) {
       this.onSubmit(trimmed, this.openNote);
@@ -505,6 +504,23 @@ var TitleModal = class extends import_obsidian4.Modal {
   onClose() {
     this.isClosed = true;
     this.contentEl.empty();
+  }
+};
+var ObjectTypeModal = class extends import_obsidian4.FuzzySuggestModal {
+  constructor(app, mappings, onChoose) {
+    super(app);
+    this.mappings = mappings;
+    this.onChoose = onChoose;
+    this.setPlaceholder("Select object type");
+  }
+  getItems() {
+    return this.mappings;
+  }
+  getItemText(mapping) {
+    return mapping.trigger;
+  }
+  onChooseItem(mapping) {
+    this.onChoose(mapping);
   }
 };
 var FileSuggest = class extends import_obsidian4.AbstractInputSuggest {
@@ -546,13 +562,11 @@ var FileSuggest = class extends import_obsidian4.AbstractInputSuggest {
       }
       if (normalizedTarget !== "") {
         const folderPath = file.parent ? sanitizeFolderPath(file.parent.path) : "";
-        if (folderPath !== normalizedTarget)
-          return false;
+        if (folderPath !== normalizedTarget) return false;
       }
       if (useProperties && propertyKey && propertyValue) {
         const frontmatter = cache == null ? void 0 : cache.frontmatter;
-        if (!frontmatter)
-          return false;
+        if (!frontmatter) return false;
         const val = frontmatter[propertyKey];
         if (val !== void 0 && (typeof val === "string" || typeof val === "number" || typeof val === "boolean") && String(val).toLowerCase() !== propertyValue.toLowerCase()) {
           return false;
@@ -588,8 +602,7 @@ var TriggerSuggest = class extends import_obsidian5.EditorSuggest {
     const escapedSymbol = symbol.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
     const regex = new RegExp(`${escapedSymbol}([^\\s]*)$`);
     const match = regex.exec(line);
-    if (!match)
-      return null;
+    if (!match) return null;
     const query = match[1];
     const triggerStart = line.length - match[0].length;
     if (triggerStart > 0) {
@@ -623,8 +636,7 @@ var TriggerSuggest = class extends import_obsidian5.EditorSuggest {
    */
   selectSuggestion(suggestion) {
     const context = this.context;
-    if (!context)
-      return;
+    if (!context) return;
     if (suggestion.type === "command" && suggestion.commandId) {
       context.editor.replaceRange("", context.start, context.end);
       const appWithCommands = this.app;
@@ -636,26 +648,35 @@ var TriggerSuggest = class extends import_obsidian5.EditorSuggest {
       return;
     }
     new TitleModal(this.app, this.plugin, suggestion, (title, openNote) => {
-      void this.handleNoteCreation(suggestion, title, openNote, context);
+      void this.plugin.creator.createOrLink(suggestion, title, openNote, context.editor, context.start, context.end);
     }).open();
+  }
+};
+
+// src/creator.ts
+var import_obsidian6 = require("obsidian");
+var ObjectCreator = class {
+  constructor(app, plugin) {
+    this.app = app;
+    this.plugin = plugin;
   }
   /**
    * Central logic for creating a new note or linking to an existing one.
+   * The text between `start` and `end` is replaced with the link.
    */
-  async handleNoteCreation(suggestion, title, openNote, context) {
+  async createOrLink(suggestion, title, openNote, editor, start, end) {
     var _a;
-    const editor = context.editor;
     const sanitizedTitle = sanitizeFileName(title);
     const sourcePath = ((_a = this.app.workspace.getActiveFile()) == null ? void 0 : _a.path) || "";
     const existingFile = this.findExistingFile(sanitizedTitle, suggestion);
     if (existingFile) {
-      this.insertLinkAndFocus(editor, existingFile, sourcePath, title, context);
-      new import_obsidian5.Notice(`Linked to existing note: "${existingFile.basename}"`);
+      this.insertLinkAndFocus(editor, existingFile, sourcePath, title, start, end);
+      new import_obsidian6.Notice(`Linked to existing note: "${existingFile.basename}"`);
       return;
     }
     const templateFile = this.getTemplateFile(suggestion);
     if (!templateFile && suggestion.templateName) {
-      new import_obsidian5.Notice(`Template "${suggestion.templateName}" not found. Creating note without template.`, 3e3);
+      new import_obsidian6.Notice(`Template "${suggestion.templateName}" not found. Creating note without template.`, 3e3);
     }
     try {
       const folder = suggestion.outputPath || this.plugin.settings.defaultOutputPath;
@@ -672,17 +693,17 @@ var TriggerSuggest = class extends import_obsidian5.EditorSuggest {
         useProperties ? suggestion.propertyValue : void 0
       );
       if (newFile) {
-        this.insertLinkAndFocus(editor, newFile, sourcePath, title, context);
+        this.insertLinkAndFocus(editor, newFile, sourcePath, title, start, end);
         if (openNote) {
           await this.app.workspace.openLinkText(newFile.path, "", true);
         }
-        new import_obsidian5.Notice(`Created new note: "${newFile.basename}"`);
+        new import_obsidian6.Notice(`Created new note: "${newFile.basename}"`);
       } else {
-        new import_obsidian5.Notice("Error: failed to create file.", 5e3);
+        new import_obsidian6.Notice("Error: failed to create file.", 5e3);
       }
     } catch (e) {
       console.warn("Objects: Error in creation process:", e);
-      new import_obsidian5.Notice("Error creating note. See console for details.");
+      new import_obsidian6.Notice("Error creating note. See console for details.");
     }
   }
   /**
@@ -693,10 +714,9 @@ var TriggerSuggest = class extends import_obsidian5.EditorSuggest {
   findExistingFile(title, suggestion) {
     const folder = suggestion.outputPath || this.plugin.settings.defaultOutputPath;
     const targetFolder = sanitizeFolderPath(folder);
-    const specificPath = (0, import_obsidian5.normalizePath)(targetFolder ? `${targetFolder}/${title}.md` : `${title}.md`);
+    const specificPath = (0, import_obsidian6.normalizePath)(targetFolder ? `${targetFolder}/${title}.md` : `${title}.md`);
     const fileAtTable = this.app.vault.getAbstractFileByPath(specificPath);
-    if (fileAtTable instanceof import_obsidian5.TFile)
-      return fileAtTable;
+    if (fileAtTable instanceof import_obsidian6.TFile) return fileAtTable;
     if (!targetFolder) {
       return this.app.metadataCache.getFirstLinkpathDest(title, "");
     }
@@ -708,22 +728,21 @@ var TriggerSuggest = class extends import_obsidian5.EditorSuggest {
   getTemplateFile(suggestion) {
     var _a;
     const templateName = (_a = suggestion.templateName) == null ? void 0 : _a.trim();
-    if (!templateName)
-      return null;
+    if (!templateName) return null;
     const templateFolder = sanitizeFolderPath(this.plugin.settings.templateFolder);
-    const templatePath = (0, import_obsidian5.normalizePath)(templateFolder ? `${templateFolder}/${templateName}.md` : `${templateName}.md`);
+    const templatePath = (0, import_obsidian6.normalizePath)(templateFolder ? `${templateFolder}/${templateName}.md` : `${templateName}.md`);
     const file = this.app.vault.getAbstractFileByPath(templatePath);
-    return file instanceof import_obsidian5.TFile ? file : null;
+    return file instanceof import_obsidian6.TFile ? file : null;
   }
   /**
    * Inserts the markdown link into the editor and sets the focus.
    */
-  insertLinkAndFocus(editor, file, sourcePath, alias, context) {
+  insertLinkAndFocus(editor, file, sourcePath, alias, start, end) {
     const link = this.app.fileManager.generateMarkdownLink(file, sourcePath, "", alias).trim();
-    editor.replaceRange(link, context.start, context.end);
+    editor.replaceRange(link, start, end);
     const newCursorPos = {
-      line: context.start.line,
-      ch: context.start.ch + link.length
+      line: start.line,
+      ch: start.ch + link.length
     };
     editor.setCursor(newCursorPos);
     editor.focus();
@@ -731,7 +750,7 @@ var TriggerSuggest = class extends import_obsidian5.EditorSuggest {
 };
 
 // src/main.ts
-var ObjectsPlugin = class extends import_obsidian6.Plugin {
+var ObjectsPlugin = class extends import_obsidian7.Plugin {
   constructor() {
     super(...arguments);
     /** Current configuration of the plugin */
@@ -744,8 +763,46 @@ var ObjectsPlugin = class extends import_obsidian6.Plugin {
     console.debug("Objects: Loading...");
     await this.loadSettings();
     this.templater = new TemplaterHandler(this.app);
+    this.creator = new ObjectCreator(this.app, this);
     this.addSettingTab(new SettingsTab(this.app, this));
     this.registerEditorSuggest(new TriggerSuggest(this.app, this));
+    this.addCommand({
+      id: "convert-selection-to-object",
+      name: "Convert selection to object",
+      editorCallback: (editor) => this.convertSelectionToObject(editor)
+    });
+  }
+  /**
+   * Lets the user pick an object type and turns the current selection (or the word
+   * under the cursor) into a link to a new or existing object of that type.
+   */
+  convertSelectionToObject(editor) {
+    const mappings = this.settings.triggerTemplates.filter((t) => t.enabled && t.type === "template");
+    if (mappings.length === 0) {
+      new import_obsidian7.Notice("No enabled object types configured.");
+      return;
+    }
+    let from = editor.getCursor("from");
+    let to = editor.getCursor("to");
+    if (!editor.somethingSelected()) {
+      const word = editor.wordAt(from);
+      if (word) {
+        from = word.from;
+        to = word.to;
+      }
+    }
+    const text = editor.getRange(from, to).replace(/\s+/g, " ").trim();
+    const openTitleModal = (mapping) => {
+      new TitleModal(this.app, this, mapping, (title, openNote) => {
+        void this.creator.createOrLink(mapping, title, openNote, editor, from, to);
+      }, text).open();
+    };
+    const [onlyMapping] = mappings;
+    if (mappings.length === 1 && onlyMapping) {
+      openTitleModal(onlyMapping);
+    } else {
+      new ObjectTypeModal(this.app, mappings, openTitleModal).open();
+    }
   }
   /**
    * Checks if necessary third-party plugins (like Templater) are active.
