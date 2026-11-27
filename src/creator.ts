@@ -52,12 +52,14 @@ export class ObjectCreator {
 
             // 4. Create and link via TemplaterHandler
             const useProperties = this.plugin.settings.useProperties;
+            const sourceRelation = this.buildSourceRelation(suggestion);
             const newFile = await this.plugin.templater.createNoteFromTemplate(
                 templateFile,
                 targetFolder,
                 sanitizedTitle,
                 useProperties ? suggestion.propertyKey : undefined,
-                useProperties ? suggestion.propertyValue : undefined
+                useProperties ? suggestion.propertyValue : undefined,
+                sourceRelation
             );
 
             if (newFile) {
@@ -95,6 +97,17 @@ export class ObjectCreator {
             return this.app.metadataCache.getFirstLinkpathDest(title, "");
         }
         return null;
+    }
+
+    /**
+     * Builds the relation to the note the user is typing in, if the mapping asks for one.
+     * The link text is the shortest unambiguous path, as Obsidian would write a wikilink.
+     */
+    private buildSourceRelation(suggestion: TriggerTemplateMapping): { key: string; link: string } | undefined {
+        const key = suggestion.sourcePropertyKey?.trim();
+        const sourceFile = this.app.workspace.getActiveFile();
+        if (!key || !sourceFile) return undefined;
+        return { key, link: `[[${this.app.metadataCache.fileToLinktext(sourceFile, '')}]]` };
     }
 
     /**

@@ -332,6 +332,17 @@ export class SettingsTab extends PluginSettingTab {
                         this.debouncedSave();
                     }));
 
+            new Setting(contentEl)
+                .setName('Source property')
+                .setDesc('Optional. Frontmatter key that receives a link to the note you created this object from, e.g. "project". Only set on newly created notes.')
+                .addText(t => t
+                    .setPlaceholder('Key')
+                    .setValue(mapping.sourcePropertyKey || '')
+                    .onChange(v => {
+                        mapping.sourcePropertyKey = v;
+                        this.debouncedSave();
+                    }));
+
             if (useProperties) {
                 new Setting(contentEl)
                     .setName('Property key')

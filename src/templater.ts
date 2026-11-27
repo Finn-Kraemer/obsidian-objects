@@ -1,6 +1,7 @@
 import { App, TFile, normalizePath, moment } from 'obsidian';
 import { ITemplaterAPI, ITemplaterPlugin, InternalPlugins } from './types';
 import { sanitizeFolderPath } from './utils';
+import { mergeRelation } from './relation';
 
 /**
  * Handles note creation.
@@ -40,7 +41,8 @@ export class TemplaterHandler {
         folderPath: string,
         fileName: string,
         propertyKey?: string,
-        propertyValue?: string
+        propertyValue?: string,
+        sourceRelation?: { key: string; link: string }
     ): Promise<TFile | null> {
         const api = this.getApi();
         const sanitizedFolder = sanitizeFolderPath(folderPath);
@@ -78,10 +80,16 @@ export class TemplaterHandler {
             }
         }
 
-        if (newFile && propertyKey && propertyValue) {
+        const hasProperty = !!(propertyKey && propertyValue);
+        if (newFile && (hasProperty || sourceRelation)) {
             try {
                 await this.app.fileManager.processFrontMatter(newFile, (frontmatter: Record<string, unknown>) => {
-                    frontmatter[propertyKey] = propertyValue;
+                    if (propertyKey && propertyValue) {
+                        frontmatter[propertyKey] = propertyValue;
+                    }
+                    if (sourceRelation) {
+                        frontmatter[sourceRelation.key] = mergeRelation(frontmatter[sourceRelation.key], sourceRelation.link);
+                    }
                 });
             } catch (e) {
                 console.warn("Objects: Failed to add frontmatter properties:", e);
